@@ -29,6 +29,7 @@
     "@types/mocha": "^10.0.10",
     "@types/node": "24.x",
     "eslint": "^10.5.0",
+    "globals": "^15.0.0",
     "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^3.0.0"
   },
