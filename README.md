@@ -1,65 +1,17 @@
-# flowchart-extension README
+# Flowchart Visualizer for VS Code
 
-This is the README for your extension "flowchart-extension". After writing up a brief description, we recommend including the following sections.
+Generate flowcharts from the Python file open in VS Code. The visualizer updates as you edit the file and offers two views:
 
-## Features
+- **Functions** shows function call relationships.
+- **Timeline** shows Python statements in source order.
+- The diagram updates from the active Python editor; no separate text-entry panel is needed.
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+Run **Flowchart: Open Visualizer** from the Command Palette to open the diagram beside the editor. Select a Python file and edit it to refresh the diagram.
 
-For example if there is an image subfolder under your extension project workspace:
+## Development
 
-\!\[feature X\]\(images/feature-x.png\)
+The webview JavaScript bundle is generated into `dist/webview/` so it stays separate from the editable webview source:
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+- Run `npm install` to install dependencies.
+- Run `npm run build:webview` to bundle the parser and diagram renderer.
+- Run `npm test` to build, lint, and run the extension tests.

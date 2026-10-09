@@ -1,7 +1,7 @@
 {
   "name": "flowchart-extension",
   "displayName": "flowchart-extension",
-  "description": "makes flowchart from python code",
+  "description": "Visualizes Python code as flowcharts in VS Code",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.140.0"
@@ -9,27 +9,31 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "onStartupFinished"
-  ],
   "main": "./extension.js",
   "contributes": {
-    "commands": [{
-      "command": "flowchart-extension.helloWorld",
-      "title": "Hello World"
-    }]
+    "commands": [
+      {
+        "command": "flowchart-extension.openFlowchart",
+        "title": "Flowchart: Open Visualizer"
+      }
+    ]
   },
   "scripts": {
+    "build:webview": "esbuild webview/main.js --bundle --minify --format=iife --outfile=dist/webview/bundle.js",
+    "vscode:prepublish": "npm run build:webview",
     "lint": "eslint .",
-    "pretest": "npm run lint",
+    "pretest": "npm run build:webview && npm run lint",
     "test": "vscode-test"
   },
   "devDependencies": {
+    "@lezer/python": "^1.1.19",
     "@types/vscode": "^1.140.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "24.x",
+    "esbuild": "^0.25.0",
     "eslint": "^10.5.0",
     "globals": "^15.0.0",
+    "mermaid": "^11.4.1",
     "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^3.0.0"
   },

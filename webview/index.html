@@ -1,16 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src {{cspSource}} data:; style-src {{cspSource}} 'unsafe-inline'; script-src 'nonce-{{nonce}}';">
   <title>Flowchart Visualizer</title>
-  
+  <link rel="stylesheet" href="{{styleUri}}">
 </head>
-
 <body>
-  <h1>hello world</h1>
-  
+  <main class="flowchart" aria-label="Generated diagram">
+    <div id="display" role="status" aria-live="polite">Open a Python file to generate a diagram.</div>
+    <footer class="diagram-toolbar">
+      <label for="diagram-mode">Mode</label>
+      <select id="diagram-mode">
+        <option value="functions">Functions</option>
+        <option value="timeline">Timeline</option>
+      </select>
+      <div id="time-track" aria-label="Diagram updates">0</div>
+    </footer>
+  </main>
+  <script nonce="{{nonce}}" src="{{scriptUri}}"></script>
 </body>
-
 </html>
