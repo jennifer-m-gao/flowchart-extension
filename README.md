@@ -1,17 +1,29 @@
-# Flowchart Visualizer for VS Code
+# PyChart for VS Code
 
-Generate flowcharts from the Python file open in VS Code. The visualizer updates as you edit the file and offers two views:
+An extension for VSCode that creates flowcharts for Python functions as a webview on the user's right-side window.
 
-- **Functions** shows function call relationships.
-- **Timeline** shows Python statements in source order.
-- The diagram updates from the active Python editor; no separate text-entry panel is needed.
+## Features
 
-Run **Flowchart: Open Visualizer** from the Command Palette to open the diagram beside the editor. Select a Python file and edit it to refresh the diagram.
+- Real-time parsing: automatically analyzes active Python file and extracts control structures (if/elif/else, for/while loops, function definitions, and returns)
+- Interactive webview: renders clean responsive Mermaid.js fowcharts directly within VSCode
 
-## Development
+## Installation
 
-The webview JavaScript bundle is generated into `dist/webview/` so it stays separate from the editable webview source:
+1. Open Visual Studio Code
+2. Go to the Extensions view
+3. Search for PyChart
+4. Click Install
 
-- Run `npm install` to install dependencies.
-- Run `npm run build:webview` to bundle the parser and diagram renderer.
-- Run `npm test` to build, lint, and run the extension tests.
+## Usage
+
+1. Run **Flowchart: Open Visualizer** from the Command Palette to open the diagram beside the editor
+2. Select a Python file and edit it to refresh the diagram
+
+## Requirements
+
+- Visual Studio Code v1.75.0 or higher
+- Python extension for VS Code
+
+### 1.0.0
+
+Initial release of PyChart
