@@ -27,7 +27,7 @@ function activate(context) {
 		if (sourceDocument.languageId !== 'python') {
 			panel.webview.postMessage({
 				type: 'setMessage',
-				text: 'The flowchart visualizer supports Python files.'
+				text: 'The PyChart visualizer supports Python files.'
 			});
 			return;
 		}
@@ -47,7 +47,7 @@ function activate(context) {
 
 		panel = vscode.window.createWebviewPanel(
 			'flowchartVisualizer',
-			'Flowchart Visualizer',
+			'PyChart Visualizer',
 			vscode.ViewColumn.Beside,
 			{
 				enableScripts: true,
@@ -87,7 +87,7 @@ function activate(context) {
 	};
 
 	context.subscriptions.push(
-		vscode.commands.registerCommand('flowchart-extension.openFlowchart', openFlowchart),
+		vscode.commands.registerCommand('pychart-extension.openFlowchart', openFlowchart),
 		vscode.window.onDidChangeActiveTextEditor(editor => {
 			if (editor) {
 				sourceDocument = editor.document;

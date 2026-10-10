@@ -16,7 +16,7 @@ An extension for VSCode that creates flowcharts for Python functions as a webvie
 
 ## Usage
 
-1. Run **Flowchart: Open Visualizer** from the Command Palette to open the diagram beside the editor
+1. Run **PyChart: Open Visualizer** from the Command Palette to open the diagram beside the editor
 2. Select a Python file and edit it to refresh the diagram
 
 ## Requirements
