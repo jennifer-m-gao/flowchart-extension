@@ -1,7 +1,7 @@
 // Drives the PyChart webview in headless Chrome the way VS Code does, and prints PASS/FAIL per check.
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import puppeteer from "puppeteer-core";
 import { startServer, findBrowser, CHECKOUT } from "./server.mjs";
 
@@ -82,9 +82,9 @@ async function ensure(code, offset) {
   await post({ type: "setMessage", text: "reset" });
   await setCode(code, offset);
 }
-async function changeControl(sel, apply) {
+async function changeControl(sel, apply, arg) {
   const before = await updates();
-  await page.$eval(sel, apply);
+  await page.$eval(sel, apply, arg);
   await page.waitForFunction((b) => +document.getElementById("time-track").textContent > b, { timeout: 10000 }, before);
 }
 
@@ -366,6 +366,146 @@ try {
     ev.push(`same in dark and Modern light: ${same.join(", ") || "none"}${same.some((k) => shared.includes(k)) ? " (expected: both themes define editorLineNumber.foreground = #6e7681)" : ""}`);
     report(7, "Themes", ok, ev, shots.join(", "));
     await page.evaluate(() => { document.body.className = "vscode-dark"; });
+  }
+
+  const visible = (sel) => page.$eval(sel, (e) => !e.hidden && getComputedStyle(e).display !== "none");
+  const settle = () => page.evaluate(() => new Promise((r) => setTimeout(r, 100)));
+  const setMode = (mode) => changeControl("#diagram-mode", (s, m) => { s.value = m; s.dispatchEvent(new Event("change")); }, mode);
+
+  // ---- 8. Functions view clean-up (hide built-ins on by default, self/class calls linked)
+  {
+    const ev = [];
+    await ensure(LF, at(LF, "results = []"));
+    await setMode("functions");
+    const box = await page.$eval("#hide-builtins", (c) => ({ checked: c.checked, disabled: c.disabled }));
+    const labels = await page.$$eval("#display .cfg-node text", (n) => n.map((e) => e.textContent));
+    const uiEdges = await page.$$eval("#display .cfg-edge", (n) => n.length);
+    // svg edges carry no ids, so take the edge list from the same parser and check the UI draws that many.
+    const { functionGraph } = await import(pathToFileURL(path.join(CHECKOUT, "webview", "functionParser.js")).href);
+    const { parser } = await import("@lezer/python");
+    const g = functionGraph(parser.parse(LF), LF, { hideBuiltins: true });
+    const names = new Map(g.nodes.map((n) => [n.id, n.label]));
+    const edgeLabels = g.edges.map((e) => `${names.get(e.source)} --> ${names.get(e.target)}`);
+    const want = ["classify", "load", "main", "Cart.__init__", "Cart.add_item"];
+    const builtins = ["print", "open", "len", "range"];
+    const shownBuiltins = builtins.filter((b) => labels.includes(b));
+    const defaultOk = box.checked && !box.disabled && want.every((w) => labels.includes(w)) && shownBuiltins.length === 0
+      && !labels.includes("Cart") && edgeLabels.includes("main --> Cart.__init__") && uiEdges === g.edges.length;
+    ev.push(`#hide-builtins: checked=${box.checked} disabled=${box.disabled}`);
+    ev.push(`node labels: ${labels.join(" | ")}; built-ins shown: ${shownBuiltins.join(", ") || "none"}`);
+    ev.push(`edges in UI: ${uiEdges}; parser edges (${g.edges.length}): ${edgeLabels.join(", ")}`);
+    const s = await shot("08-functions-clean");
+
+    await changeControl("#hide-builtins", (c) => c.click());
+    const labelsAll = await page.$$eval("#display .cfg-node text", (n) => n.map((e) => e.textContent));
+    const edgesAll = await page.$$eval("#display .cfg-edge", (n) => n.length);
+    const stateOff = await page.evaluate(() => window.__state);
+    const offOk = labelsAll.includes("print") && stateOff?.hideBuiltins === false;
+    ev.push(`unchecked: labels ${labelsAll.join(" | ")}; edges ${edgesAll}; __state.hideBuiltins = ${stateOff?.hideBuiltins}`);
+    await changeControl("#hide-builtins", (c) => c.click());
+
+    await setMode("flow");
+    const flowDisabled = await page.$eval("#hide-builtins", (c) => c.disabled);
+    ev.push(`Flow mode: #hide-builtins disabled=${flowDisabled}`);
+    report(8, "Functions view clean-up", defaultOk && offOk && flowDisabled, ev, s);
+  }
+
+  // ---- 9. Hover hints
+  {
+    await ensure(LF, at(LF, "results = []"));
+    const r = await page.$$eval("#display .cfg-node", (nodes) => ({
+      total: nodes.length,
+      withTitle: nodes.filter((g) => g.firstElementChild?.tagName === "title").length,
+      decision: nodes.find((g) => g.getAttribute("aria-label") === "decision: if s < 0")?.firstElementChild?.textContent ?? null,
+    }));
+    const ok = r.total > 0 && r.withTitle === r.total && (r.decision ?? "").includes("Click or Enter: go to code");
+    report(9, "Hover hints", ok, [`${r.withTitle}/${r.total} nodes have a first-child <title>`, `"if s < 0" title: ${JSON.stringify(r.decision)}`], await shot("09-hover-hints"));
+  }
+
+  // ---- 10. Cheat sheet
+  {
+    const ev = [];
+    let ok = true;
+    const active = () => page.evaluate(() => document.activeElement?.id ?? "");
+    await page.click("#help-button");
+    const open1 = await visible("#help-dialog");
+    const focus1 = await active();
+    ok &&= open1 && focus1 === "help-close";
+    ev.push(`click ?: dialog visible=${open1}, focus=#${focus1}`);
+    const s = await shot("10-cheat-sheet");
+    const before = await transform();
+    await page.keyboard.press("+");
+    const after = await transform();
+    ok &&= sameView(before, after);
+    ev.push(`key + while open: ${fmt(before)} -> ${fmt(after)} ${sameView(before, after) ? "(blocked, ok)" : "(ZOOMED behind the dialog)"}`);
+    await page.keyboard.press("Escape");
+    const open2 = await visible("#help-dialog");
+    const focus2 = await active();
+    ok &&= !open2 && focus2 === "help-button";
+    ev.push(`Escape: dialog visible=${open2}, focus=#${focus2}`);
+    await page.keyboard.press("?");
+    const open3 = await visible("#help-dialog");
+    ok &&= open3;
+    ev.push(`key ?: dialog visible=${open3}`);
+    await page.keyboard.press("Escape");
+    const open4 = await visible("#help-dialog");
+    ok &&= !open4;
+    ev.push(`Escape: dialog visible=${open4}`);
+    report(10, "Cheat sheet", ok, ev, s);
+  }
+
+  // ---- 11. Tip banner
+  {
+    const ev = [];
+    let ok = true;
+    const v0 = await visible("#tip-banner");
+    ok &&= !v0;
+    ev.push(`after ready, before tipState: visible=${v0}`);
+    await post({ type: "tipState", dismissed: false });
+    await page.waitForFunction(() => !document.getElementById("tip-banner").hidden, { timeout: 5000 }).catch(() => {});
+    const v1 = await visible("#tip-banner");
+    ok &&= v1;
+    ev.push(`tipState dismissed:false -> visible=${v1}`);
+    const s = await shot("11-tip-banner");
+    await page.evaluate(() => { window.__posted.length = 0; });
+    await page.click("#tip-dismiss");
+    const v2 = await visible("#tip-banner");
+    const posted = await page.evaluate(() => window.__posted.slice());
+    const state = await page.evaluate(() => window.__state);
+    const dismissOk = !v2 && posted.some((m) => m.type === "tipDismissed") && state?.tipDismissed === true;
+    ok &&= dismissOk;
+    ev.push(`click x: visible=${v2}, posted ${JSON.stringify(posted)}, __state.tipDismissed=${state?.tipDismissed}`);
+    await post({ type: "tipState", dismissed: false });
+    await settle();
+    const v3 = await visible("#tip-banner");
+    ok &&= !v3;
+    ev.push(`tipState dismissed:false again (webview state remembers) -> visible=${v3}`);
+
+    problems.push(...(await page.evaluate(() => window.__csp)).map((v) => `CSP violation: ${v}`)); // reload drops them
+    await page.reload();
+    await page.waitForFunction(() => window.__posted.some((m) => m.type === "ready"), { timeout: 10000 });
+    const fresh = await page.evaluate(() => window.__state);
+    await post({ type: "tipState", dismissed: true });
+    await settle();
+    const v4 = await visible("#tip-banner");
+    ok &&= !v4 && fresh === undefined;
+    ev.push(`reload (__state=${JSON.stringify(fresh)}), tipState dismissed:true (host remembers) -> visible=${v4}`);
+    report(11, "Tip banner", ok, ev, s);
+  }
+
+  // ---- 12. State merge: a control change keeps the other keys
+  {
+    await ensure(LF, at(LF, "results = []"));
+    await post({ type: "tipState", dismissed: false });
+    await page.waitForFunction(() => !document.getElementById("tip-banner").hidden, { timeout: 5000 });
+    await page.click("#tip-dismiss");
+    const before = await page.evaluate(() => window.__state);
+    await setMode("functions");
+    const mid = await page.evaluate(() => window.__state);
+    await setMode("flow");
+    const after = await page.evaluate(() => window.__state);
+    const ok = mid?.tipDismissed === true && after?.tipDismissed === true && typeof after?.hideBuiltins === "boolean" && mid?.mode === "functions" && after?.mode === "flow";
+    report(12, "State merge", ok, [`after dismiss: ${JSON.stringify(before)}`, `after mode -> functions: ${JSON.stringify(mid)}`, `after mode -> flow: ${JSON.stringify(after)}`]);
   }
 } catch (error) {
   report("X", "Harness error", false, error.stack);
