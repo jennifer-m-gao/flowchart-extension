@@ -529,6 +529,145 @@ try {
     const ok = mid?.tipDismissed === true && after?.tipDismissed === true && typeof after?.hideBuiltins === "boolean" && mid?.mode === "functions" && after?.mode === "flow";
     report(12, "State merge", ok, [`after dismiss: ${JSON.stringify(before)}`, `after mode -> functions: ${JSON.stringify(mid)}`, `after mode -> flow: ${JSON.stringify(after)}`]);
   }
+
+  // ---- Run & replay (R1-R10): demo-run.py with its committed trace, so no Python is needed.
+  {
+    const RUN = fs.readFileSync(path.join(HERE, "fixtures", "demo-run.py"), "utf8").replace(/\r\n/g, "\n");
+    const TRACE = JSON.parse(fs.readFileSync(path.join(HERE, "fixtures", "demo-run.trace.json"), "utf8"));
+    const mod = (p) => import(pathToFileURL(path.join(CHECKOUT, "webview", p)).href);
+    const { parser } = await import("@lezer/python");
+    const { buildCfg } = await mod("cfg/buildCfg.js");
+    const { listScopes } = await mod("run/scopes.js");
+    const { loadTrace, frameAt } = await mod("run/player.js");
+    const scopes = listScopes(parser.parse(RUN), RUN);
+    const graphs = new Map();
+    const graphFor = (k) => graphs.get(k) || graphs.set(k, buildCfg(scopes.get(k).node, RUN)).get(k);
+    const L = loadTrace(TRACE, { scopes, graphFor, code: RUN });
+    const STDOUT = TRACE.output.map((c) => c[2]).join("");
+    const problemsBefore = problems.length;
+    const index = () => page.$eval("#run-scrub", (e) => +e.value);
+    const stepShown = (i) => page.waitForFunction((n) => window.__lastStep?.index === n, { timeout: 10000 }, i);
+    const seek = async (i) => {
+      await page.$eval("#run-scrub", (e, n) => { e.value = String(n); e.dispatchEvent(new Event("input")); }, i);
+      await stepShown(i);
+    };
+    const stepIds = () => page.$$eval("#display .cfg-node.is-step", (n) => n.map((e) => e.dataset.id));
+
+    await ensure(RUN, at(RUN, "results = []"));
+    await page.evaluate(() => { window.__posted.length = 0; window.__lastStep = null; });
+    await page.click("#run");
+    const posted = await page.evaluate(() => window.__posted.slice());
+    const banner1 = await page.$eval("#run-banner", (e) => e.textContent);
+    report("R1", "Run posts run", posted.some((m) => m.type === "run"), [`posted ${JSON.stringify(posted)}; banner ${JSON.stringify(banner1)}`]);
+
+    await post({ type: "trace", trace: TRACE, codeVersion: 1 });
+    await stepShown(0);
+    {
+      const barOn = await visible("#run-bar");
+      const t = await title();
+      const ids = await stepIds();
+      const banner = await page.$eval("#run-banner", (e) => e.textContent);
+      const ok = barOn && (t.startsWith("<module>") || t.startsWith("main")) && ids.length === 1 && ids[0] === "start";
+      report("R2", "Trace starts replay", ok, [`#run-bar visible=${barOn}, title ${JSON.stringify(t)}, .is-step on ${JSON.stringify(ids)}, ${L.total} steps`, `reason banner: ${JSON.stringify(banner)}`]);
+    }
+
+    {
+      await page.$eval("#run-speed", (e) => { e.value = "20"; e.dispatchEvent(new Event("input")); });
+      const i0 = await index();
+      await page.click("#run-play");
+      await new Promise((r) => setTimeout(r, 600));
+      const i1 = await index();
+      const s = await shot("run-playing");
+      await page.click("#run-play");
+      const i2 = await index();
+      await new Promise((r) => setTimeout(r, 300));
+      const i3 = await index();
+      const ok = i1 - i0 > 5 && i2 === i3;
+      report("R3", "Play / pause", ok, [`speed 20: index ${i0} -> ${i1} after 600 ms (advanced ${i1 - i0})`, `paused at ${i2}, after 300 ms ${i3}`], s);
+    }
+
+    {
+      const i = L.steps.findIndex((st) => st.scopeKey === "classify");
+      await seek(i);
+      const t = await title();
+      const n = await nodeCount();
+      const ids = await stepIds();
+      const want = frameAt(L, i).nodeId;
+      const ok = t.startsWith("main › classify") && n === graphFor("classify").nodes.length && ids.length === 1 && ids[0] === want;
+      report("R4", "Scrub into classify", ok, [`step ${i}: title ${JSON.stringify(t)}, ${n} nodes (classify graph ${graphFor("classify").nodes.length}), .is-step ${JSON.stringify(ids)} (expected ${want})`], await shot("run-cross-function"));
+    }
+
+    {
+      const i = L.steps.findIndex((st) => st.changed.s && st.changed.s[0] !== undefined);
+      await seek(i);
+      const changed = await page.$$eval("#run-vars .run-changed", (n) => n.map((e) => e.textContent));
+      const all = await page.$eval("#run-vars", (e) => e.textContent);
+      const ok = changed.some((c) => c.startsWith("s:") && c.includes("→"));
+      report("R5", "Variables strip", ok, [`step ${i}: changed ${JSON.stringify(changed)}; strip ${JSON.stringify(all)}`], await shot("run-variables"));
+    }
+
+    {
+      await page.evaluate(() => document.activeElement?.blur());
+      await page.keyboard.press("End");
+      await stepShown(L.total - 1);
+      await page.click("#run-output summary");
+      const text = await page.$eval("#run-output pre", (e) => e.textContent);
+      report("R6", "Output at the last step", text === STDOUT, [`pre ${JSON.stringify(text)}`, `expected ${JSON.stringify(STDOUT)}`], await shot("run-output"));
+    }
+
+    {
+      const first = L.steps.find((st) => st.scopeKey === "classify");
+      const i = L.ownerSteps.get(first.callId).at(-1);
+      const loop = graphFor("classify").nodes.find((nd) => nd.label === "for s in scores").id;
+      const want = frameAt(L, i).visits.get(loop);
+      await seek(i);
+      const badge = await page.$eval(`#display .cfg-node[data-id="${loop}"]`, (g) => g.querySelector(".cfg-badge")?.textContent ?? null);
+      const badges = await page.$$eval("#display .cfg-badge", (n) => n.map((e) => `${e.parentNode.getAttribute("aria-label")}=${e.textContent}`).filter((s) => !s.endsWith("=")));
+      report("R7", "Visit badges", badge === String(want), [`step ${i} (end of classify call 1): loop badge ${JSON.stringify(badge)}, expected ${want}`, `badges: ${badges.join(", ")}`], await shot("run-badges"));
+    }
+
+    // R9 before R8: R8 leaves replay.
+    {
+      await page.evaluate(() => document.activeElement?.blur());
+      await page.keyboard.press("Home");
+      await stepShown(0);
+      const by = { same: [], switch: [], layout: [] };
+      for (let i = 1; i < L.total; i++) {
+        await page.keyboard.press("ArrowRight");
+        await stepShown(i);
+        const r = await page.evaluate(() => ({ ms: window.__lastStepMs, kind: window.__lastStep.kind }));
+        by[r.kind].push(r.ms);
+      }
+      const stats = (xs) => {
+        if (!xs.length) return { n: 0 };
+        const s = [...xs].sort((a, b) => a - b);
+        const q = (p) => s[Math.min(s.length - 1, Math.ceil(p * s.length) - 1)];
+        return { n: s.length, median: q(0.5), p95: q(0.95), max: s.at(-1) };
+      };
+      const fmtStats = (x) => (x.n ? `n=${x.n} median ${x.median.toFixed(2)} ms, p95 ${x.p95.toFixed(2)} ms, max ${x.max.toFixed(2)} ms` : "n=0");
+      const same = stats(by.same);
+      report("R9", "Step update time (same-scope p95 < 16 ms)", same.n > 0 && same.p95 < 16, [
+        `same scope: ${fmtStats(same)}`,
+        `cross-function, cached layout: ${fmtStats(stats(by.switch))}`,
+        `cross-function, first show (layout): ${fmtStats(stats(by.layout))}${by.layout.length ? ` [${by.layout.map((m) => m.toFixed(1)).join(", ")}]` : ""}`,
+      ]);
+    }
+
+    {
+      const edited = RUN.replace("    results = []\n", "    results = []\n    x = 1\n");
+      await setCode(edited, at(edited, "x = 1"));
+      const barOn = await visible("#run-bar");
+      const banner = await page.$eval("#run-banner", (e) => e.textContent);
+      const t = await title();
+      const left = await page.$$eval("#display .is-step, #display .is-visited, #display .cfg-badge", (n) => n.length);
+      const hasX = !!(await page.$('#display .cfg-node[aria-label="statement: x = 1"]'));
+      const ok = !barOn && banner.includes("Code changed") && t === "classify" && hasX && left === 0;
+      report("R8", "Edit ends replay", ok, [`#run-bar visible=${barOn}, banner ${JSON.stringify(banner)}, title ${JSON.stringify(t)}, x = 1 node ${hasX ? "present" : "MISSING"}, run marks left ${left}`], await shot("run-edit-ends"));
+    }
+
+    const runProblems = [...problems.slice(problemsBefore), ...(await page.evaluate(() => window.__csp)).map((v) => `CSP violation: ${v}`)];
+    report("R10", "No console errors / CSP violations in run mode", runProblems.length === 0, runProblems.length ? runProblems : ["none"]);
+  }
 } catch (error) {
   report("X", "Harness error", false, error.stack);
 } finally {
