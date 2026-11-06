@@ -5,7 +5,7 @@ An extension for VSCode that creates flowcharts for Python functions as a webvie
 ## Features
 
 - Real-time parsing: automatically analyzes active Python file and extracts control structures (if/elif/else, for/while loops, function definitions, and returns)
-- Interactive webview: renders clean responsive Mermaid.js fowcharts directly within VSCode
+- Interactive webview: renders clean responsive Mermaid.js flowcharts directly within VSCode
 
 ## Installation
 
@@ -21,9 +21,14 @@ An extension for VSCode that creates flowcharts for Python functions as a webvie
 
 ## Requirements
 
-- Visual Studio Code v1.75.0 or higher
-- Python extension for VS Code
+- Visual Studio Code 1.140.0 or higher
 
 ### 1.0.0
 
 Initial release of PyChart
+
+## Development
+
+- `npm install` installs dependencies.
+- `npm run build:webview` bundles the webview (parser + Mermaid renderer) into `dist/webview/bundle.js`. This file is generated and not committed; `vsce package` rebuilds it automatically via `vscode:prepublish`.
+- `npm test` builds, lints, and runs the extension integration tests in a downloaded VS Code instance.
