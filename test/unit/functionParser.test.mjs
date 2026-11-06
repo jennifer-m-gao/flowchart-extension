@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { parser } from "@lezer/python";
 import { functionGraph } from "../../webview/functionParser.js";
 
-function functions(source) {
-  return functionGraph(parser.parse(source), source);
+function functions(source, options) {
+  return functionGraph(parser.parse(source), source, options);
 }
 
 const edges = (g) => g.edges.map((e) => `${e.source} --> ${e.target}`);
@@ -98,4 +98,25 @@ test("externals have no source range", () => {
   const ext = node(functions("def a():\n  print(1)\n"), "external1");
   assert.equal(ext.from, null);
   assert.equal(ext.to, null);
+});
+
+const builtinsSource = "def a():\n  print(len([]))\n  helper()\n";
+
+test("hideBuiltins drops built-in calls but keeps other externals", () => {
+  const g = functions(builtinsSource, { hideBuiltins: true });
+  assert.ok(!labels(g).includes("print"));
+  assert.ok(!labels(g).includes("len"));
+  assert.equal(g.nodes.find((n) => n.label === "helper").kind, "external");
+  assert.deepEqual(labelEdges(g), ["a --> helper"]);
+});
+
+test("built-ins are shown by default", () => {
+  const g = functions(builtinsSource);
+  assert.ok(labels(g).includes("print"));
+  assert.ok(labels(g).includes("len"));
+});
+
+test("hideBuiltins never hides a user def named like a built-in", () => {
+  const g = functions("def print():\n  pass\ndef a():\n  print()\n", { hideBuiltins: true });
+  assert.deepEqual(labelEdges(g), ["a --> print"]);
 });

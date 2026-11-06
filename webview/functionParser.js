@@ -1,10 +1,12 @@
+import { PY_BUILTINS } from "./pyBuiltins.js";
+
 const FUNCTION_DEFINITION = "FunctionDefinition";
 const CLASS_DEFINITION = "ClassDefinition";
 const CALL_EXPRESSION = "CallExpression";
 const VARIABLE_NAME = "VariableName";
 const DECORATED_STATEMENT = "DecoratedStatement";
 
-export function functionGraph(tree, code) {
+export function functionGraph(tree, code, { hideBuiltins = false } = {}) {
   const functions = new Map();
 
   findFunctions(tree.cursor(), code, functions, []);
@@ -18,7 +20,11 @@ export function functionGraph(tree, code) {
   for (const [caller, { calls }] of functions) {
     for (const calledName of calls) {
       // Bare calls only reach top-level defs; nested defs and methods are not callable by bare name.
-      let target = functions.has(calledName) && !calledName.includes(".") ? nodeIds.get(calledName) : externalIds.get(calledName);
+      const local = functions.has(calledName) && !calledName.includes(".");
+      if (!local && hideBuiltins && PY_BUILTINS.has(calledName)) {
+        continue; // a user def named like a built-in is local, so it is never hidden
+      }
+      let target = local ? nodeIds.get(calledName) : externalIds.get(calledName);
       if (target === undefined) {
         target = `external${nextId++}`;
         externalIds.set(calledName, target);

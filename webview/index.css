@@ -71,7 +71,8 @@ body {
   margin-left: auto;
 }
 
-.whole-file {
+.whole-file,
+.hide-builtins {
   display: inline-flex;
   gap: 4px;
   align-items: center;

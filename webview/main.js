@@ -13,6 +13,7 @@ const vscode = acquireVsCodeApi();
 const display = document.getElementById("display");
 const modeSelector = document.getElementById("diagram-mode");
 const wholeFile = document.getElementById("whole-file");
+const hideBuiltins = document.getElementById("hide-builtins");
 const scopeTitle = document.getElementById("scope-title");
 const timeTrack = document.getElementById("time-track");
 const fitButton = document.getElementById("fit-view");
@@ -22,7 +23,10 @@ const saveState = (patch) => vscode.setState(mergeState(vscode.getState(), patch
 const saved = vscode.getState() || {};
 modeSelector.value = migrateMode(saved.mode);
 wholeFile.checked = !!saved.wholeFile;
+// On by default: learners care about their own functions, and built-ins dominate small scripts.
+hideBuiltins.checked = saved.hideBuiltins ?? true;
 wholeFile.disabled = modeSelector.value === "functions";
+hideBuiltins.disabled = modeSelector.value !== "functions";
 
 const viewFromControls = () => modeSelector.value === "functions"
   ? { kind: "functions" }
@@ -58,13 +62,15 @@ function cancelRender() {
 
 function onControlChange() {
   wholeFile.disabled = modeSelector.value === "functions";
-  saveState({ mode: modeSelector.value, wholeFile: wholeFile.checked });
+  hideBuiltins.disabled = modeSelector.value !== "functions";
+  saveState({ mode: modeSelector.value, wholeFile: wholeFile.checked, hideBuiltins: hideBuiltins.checked });
   views.replace(viewFromControls());
   lastRendered = null;
   update();
 }
 modeSelector.addEventListener("change", onControlChange);
 wholeFile.addEventListener("change", onControlChange);
+hideBuiltins.addEventListener("change", onControlChange);
 
 window.addEventListener("message", (event) => {
   const message = event.data;
@@ -121,8 +127,9 @@ async function update() {
     let graph;
 
     if (view.kind === "functions") {
-      next = { code, viewKind: "functions", follow: false, scopeKey: "", fitKey: "functions" };
-      graph = () => functionGraph(tree, code);
+      const hide = hideBuiltins.checked;
+      next = { code, viewKind: "functions", follow: false, scopeKey: "", fitKey: `functions:${hide}` };
+      graph = () => functionGraph(tree, code, { hideBuiltins: hide });
       scopeTitle.textContent = "";
     } else {
       const scope = view.follow
