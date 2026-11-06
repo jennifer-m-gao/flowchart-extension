@@ -1,55 +1,63 @@
 import { escapeLabel } from "./escapeLabel.js";
 const FUNCTION_DEFINITION = "FunctionDefinition";
+const CLASS_DEFINITION = "ClassDefinition";
 const CALL_EXPRESSION = "CallExpression";
 const VARIABLE_NAME = "VariableName";
 
 export function parseFunctions(tree, code) {
   const functions = new Map();
 
-  findFunctions(tree.cursor(), code, functions);
+  findFunctions(tree.cursor(), code, functions, []);
 
-  const names = [...functions.keys()];
-  const nodeIds = new Map(names.map((name, index) => [name, `function${index}`]));
-  const calledNames = new Set();
+  const nodeIds = new Map([...functions.keys()].map((name, index) => [name, `function${index}`]));
+  const externalIds = new Map();
+  const edges = new Set();
+  let nextId = nodeIds.size;
+
+  for (const [caller, calls] of functions) {
+    for (const calledName of calls) {
+      // Bare calls only reach top-level defs; nested defs and methods are not callable by bare name.
+      let target = functions.has(calledName) && !calledName.includes(".") ? nodeIds.get(calledName) : externalIds.get(calledName);
+      if (target === undefined) {
+        target = `external${nextId++}`;
+        externalIds.set(calledName, target);
+      }
+      edges.add(`${nodeIds.get(caller)} --> ${target}`);
+    }
+  }
+
   let mermaidCode = "flowchart TD\n";
 
-  for (const calls of functions.values()) {
-    for (const calledName of calls) {
-      calledNames.add(calledName);
-    }
-  }
-
-  for (const name of calledNames) {
-    if (!nodeIds.has(name)) {
-      nodeIds.set(name, `external${nodeIds.size}`);
-    }
-  }
-
-  for (const [name, id] of nodeIds) {
+  for (const [name, id] of [...nodeIds, ...externalIds]) {
     mermaidCode += `    ${id}["${escapeLabel(name)}"]\n`;
   }
 
-  for (const [name, calls] of functions) {
-    for (const calledName of calls) {
-      mermaidCode += `    ${nodeIds.get(name)} --> ${nodeIds.get(calledName)}\n`;
-    }
+  for (const edge of edges) {
+    mermaidCode += `    ${edge}\n`;
   }
 
   return mermaidCode;
 }
 
-function findFunctions(cursor, code, functions) {
-  if (cursor.name === FUNCTION_DEFINITION) {
-    const functionName = findDefinitionName(cursor, code);
-    if (functionName !== undefined) {
-      functions.set(functionName, []);
-      findCalls(cursor, code, functionName, functions);
+function findFunctions(cursor, code, functions, scope) {
+  let childScope = scope;
+
+  if (cursor.name === FUNCTION_DEFINITION || cursor.name === CLASS_DEFINITION) {
+    const isFunction = cursor.name === FUNCTION_DEFINITION;
+    const name = findDefinitionName(cursor, code);
+    if (name !== undefined) {
+      childScope = [...scope, name];
+      if (isFunction) {
+        const qualified = childScope.join(".");
+        functions.set(qualified, new Set());
+        findCalls(cursor, code, qualified, functions);
+      }
     }
   }
 
   if (cursor.firstChild()) {
     do {
-      findFunctions(cursor, code, functions);
+      findFunctions(cursor, code, functions, childScope);
     } while (cursor.nextSibling());
     cursor.parent();
   }
@@ -72,11 +80,25 @@ function findDefinitionName(cursor, code) {
   return undefined;
 }
 
+// Scans only the function's own children: nested defs/classes are scanned on their own.
 function findCalls(cursor, code, currentFunction, functions) {
+  if (cursor.firstChild()) {
+    do {
+      collectCalls(cursor, code, functions.get(currentFunction));
+    } while (cursor.nextSibling());
+    cursor.parent();
+  }
+}
+
+function collectCalls(cursor, code, calls) {
+  if (cursor.name === FUNCTION_DEFINITION || cursor.name === CLASS_DEFINITION) {
+    return;
+  }
+
   if (cursor.name === CALL_EXPRESSION && cursor.firstChild()) {
     do {
       if (cursor.name === VARIABLE_NAME) {
-        functions.get(currentFunction).push(code.slice(cursor.from, cursor.to));
+        calls.add(code.slice(cursor.from, cursor.to));
         break;
       }
     } while (cursor.nextSibling());
@@ -85,9 +107,8 @@ function findCalls(cursor, code, currentFunction, functions) {
 
   if (cursor.firstChild()) {
     do {
-      findCalls(cursor, code, currentFunction, functions);
+      collectCalls(cursor, code, calls);
     } while (cursor.nextSibling());
     cursor.parent();
   }
 }
-
