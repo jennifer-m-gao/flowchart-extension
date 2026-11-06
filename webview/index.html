@@ -10,6 +10,7 @@
 <body>
   <main class="flowchart" aria-label="Generated diagram">
     <div id="tip-banner" role="note" hidden>Tip: click a box to jump to its code · scroll to move · Ctrl+scroll to zoom · <kbd>?</kbd> for all controls <button id="tip-dismiss" type="button" aria-label="Dismiss tip">×</button></div>
+    <div id="run-banner" role="status" hidden></div>
     <div id="display" role="status" aria-live="polite">Open a Python file to generate a diagram.</div>
     <div id="help-dialog" role="dialog" aria-modal="true" aria-labelledby="help-title" hidden>
       <h2 id="help-title">Controls</h2>
@@ -22,11 +23,24 @@
         <li>Mode: Flow (the function your cursor is in) or Functions (who calls whom)</li>
         <li>Whole file (Flow): show the whole module instead of following the cursor</li>
         <li>Hide built-ins (Functions): hide print, len and other Python built-ins</li>
+        <li>&#9654; Run / <kbd>Ctrl</kbd>+<kbd>Enter</kbd>: run &amp; replay · <kbd>Space</kbd>: play/pause · <kbd>&larr;</kbd> <kbd>&rarr;</kbd>: step · <kbd>Home</kbd>/<kbd>End</kbd>: first/last step · <kbd>Esc</kbd>: back to live</li>
         <li><kbd>?</kbd>: show this list · <kbd>Esc</kbd>: close it</li>
       </ul>
       <button id="help-close" type="button">Close</button>
     </div>
+    <div id="run-vars" aria-label="Variables" hidden></div>
+    <details id="run-output" hidden><summary>Output</summary><pre></pre></details>
+    <div id="run-bar" hidden>
+      <button id="run-prev" type="button" title="Previous step (&larr;)" aria-label="Previous step">&#9198;</button>
+      <button id="run-play" type="button" title="Play / pause (Space)" aria-label="Play">&#9654;</button>
+      <button id="run-next" type="button" title="Next step (&rarr;)" aria-label="Next step">&#9197;</button>
+      <label class="run-speed"><input type="range" id="run-speed" min="1" max="20" value="4"> steps/s</label>
+      <input type="range" id="run-scrub" min="0" max="0" value="0" aria-label="Step">
+      <span id="run-pos">0 / 0</span>
+      <button id="run-stop" type="button" title="Back to live (Esc)">&#9632; Back to live</button>
+    </div>
     <footer class="diagram-toolbar">
+      <button id="run" type="button" title="Run this file and replay it (Ctrl+Enter)">&#9654; Run</button>
       <label for="diagram-mode">Mode</label>
       <select id="diagram-mode">
         <option value="flow">Flow</option>

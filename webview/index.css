@@ -140,4 +140,58 @@ body {
 #help-dialog ul { margin: 0 0 12px; padding-left: 18px; line-height: 1.6; }
 
 /* An id rule's display would otherwise beat the hidden attribute. */
-#tip-banner[hidden], #help-dialog[hidden] { display: none; }
+#tip-banner[hidden], #help-dialog[hidden], #run-banner[hidden], #run-vars[hidden], #run-output[hidden], #run-bar[hidden] { display: none; }
+
+/* Run & replay */
+.cfg-node.is-visited rect, .cfg-node.is-visited polygon { fill: var(--vscode-editor-findMatchHighlightBackground, var(--vscode-editor-inactiveSelectionBackground)); }
+.cfg-node.is-step rect, .cfg-node.is-step polygon { stroke: var(--vscode-debugIcon-continueForeground, var(--vscode-focusBorder)); stroke-width: 3.5; }
+.cfg-node .cfg-badge { fill: var(--vscode-descriptionForeground); font-size: 10px; }
+
+#run-banner {
+  flex-shrink: 0;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border);
+  color: var(--vscode-foreground);
+  background: var(--vscode-editorWidget-background);
+  font-size: 12px;
+}
+
+#run-vars {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  max-height: 72px;
+  overflow: auto;
+  padding: 6px 16px;
+  border-top: 1px solid var(--vscode-panel-border, var(--vscode-editorWidget-border));
+  color: var(--vscode-foreground);
+  font-size: 12px;
+}
+
+#run-vars .run-changed { background: var(--vscode-diffEditor-insertedTextBackground, var(--vscode-editor-inactiveSelectionBackground)); }
+
+#run-output {
+  flex-shrink: 0;
+  padding: 4px 16px;
+  border-top: 1px solid var(--vscode-panel-border, var(--vscode-editorWidget-border));
+  color: var(--vscode-foreground);
+  font-size: 12px;
+}
+
+#run-output pre { max-height: 96px; margin: 4px 0 0; overflow: auto; }
+
+#run-bar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-top: 1px solid var(--vscode-panel-border, var(--vscode-editorWidget-border));
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+}
+
+#run-scrub { flex: 1; min-width: 60px; }
+.run-speed { display: inline-flex; gap: 4px; align-items: center; }
+.run-speed input { width: 70px; }
