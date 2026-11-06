@@ -8,3 +8,5 @@ test/**
 **/*.map
 **/eslint.config.mjs
 **/.vscode-test.*
+plans/**
+.claude/**
