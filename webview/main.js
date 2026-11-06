@@ -3,7 +3,7 @@ import { buildCfg } from "./cfg/buildCfg.js";
 import { findScope } from "./cfg/findScope.js";
 import { renderGraph } from "./render/renderGraph.js";
 import { createViewStack } from "./viewStack.js";
-import { migrateMode, renderAction, scopeKey } from "./viewState.js";
+import { mergeState, migrateMode, renderAction, scopeKey } from "./viewState.js";
 import { nodeAtOffset } from "./interact/nodeAtOffset.js";
 import { revealRange } from "./interact/revealRange.js";
 import { fit, identity, panBy, toTransform, zoomAt } from "./interact/viewport.js";
@@ -17,6 +17,8 @@ const scopeTitle = document.getElementById("scope-title");
 const timeTrack = document.getElementById("time-track");
 const fitButton = document.getElementById("fit-view");
 
+// setState replaces everything: always merge, or one setting wipes the others.
+const saveState = (patch) => vscode.setState(mergeState(vscode.getState(), patch));
 const saved = vscode.getState() || {};
 modeSelector.value = migrateMode(saved.mode);
 wholeFile.checked = !!saved.wholeFile;
@@ -56,7 +58,7 @@ function cancelRender() {
 
 function onControlChange() {
   wholeFile.disabled = modeSelector.value === "functions";
-  vscode.setState({ mode: modeSelector.value, wholeFile: wholeFile.checked });
+  saveState({ mode: modeSelector.value, wholeFile: wholeFile.checked });
   views.replace(viewFromControls());
   lastRendered = null;
   update();

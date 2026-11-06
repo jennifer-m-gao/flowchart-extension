@@ -22,3 +22,13 @@ export function renderAction(shown, rendering, next) {
   }
   return rendering && !shouldRender(rendering, next) ? "wait" : "render";
 }
+
+// vscode.setState replaces the whole state, so every write merges into what is saved.
+export function mergeState(prev, patch) {
+  return { ...(prev || {}), ...patch };
+}
+
+// Either store (webview state or the host's globalState) having the dismissal hides the tip.
+export function shouldShowTip(saved, hostDismissed) {
+  return !hostDismissed && !(saved && saved.tipDismissed);
+}

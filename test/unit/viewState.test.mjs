@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { parser } from "@lezer/python";
 import { findScope } from "../../webview/cfg/findScope.js";
-import { migrateMode, renderAction, scopeKey, shouldRender } from "../../webview/viewState.js";
+import { mergeState, migrateMode, renderAction, scopeKey, shouldRender, shouldShowTip } from "../../webview/viewState.js";
 
 test("migrateMode", () => {
   assert.equal(migrateMode("timeline"), "flow");
@@ -46,4 +46,16 @@ test("scopeKey from findScope", () => {
   const k = (o) => scopeKey(findScope(tree, code, o));
   assert.notEqual(k(12), k(30));
   assert.equal(k(12), k(14));
+});
+
+test("mergeState keeps keys not in the patch", () => {
+  assert.deepEqual(mergeState({ mode: "flow", tipDismissed: true }, { mode: "functions" }), { mode: "functions", tipDismissed: true });
+  assert.deepEqual(mergeState(undefined, { hideBuiltins: false }), { hideBuiltins: false });
+});
+
+test("shouldShowTip only when neither store dismissed it", () => {
+  assert.equal(shouldShowTip(undefined, false), true);
+  assert.equal(shouldShowTip({ tipDismissed: true }, false), false);
+  assert.equal(shouldShowTip({}, true), false);
+  assert.equal(shouldShowTip({ tipDismissed: true }, true), false);
 });
