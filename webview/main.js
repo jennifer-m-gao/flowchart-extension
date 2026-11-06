@@ -355,10 +355,11 @@ document.addEventListener("keydown", (event) => {
   event.preventDefault();
 });
 
-window.addEventListener("resize", () => {
+// Watches #display, not the window: the tip banner showing or hiding also changes its height.
+new ResizeObserver(() => {
   if (root && !userMoved) {
     fitView();
   }
-});
+}).observe(display);
 
 vscode.postMessage({ type: "ready" });

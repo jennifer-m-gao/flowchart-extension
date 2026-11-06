@@ -466,9 +466,31 @@ try {
     const v1 = await visible("#tip-banner");
     ok &&= v1;
     ev.push(`tipState dismissed:false -> visible=${v1}`);
+    // The graph must still fit inside #display (1 px tolerance) once the refit after the height change lands.
+    const fits = async (when) => {
+      const r = await page.waitForFunction(() => {
+        const g = document.querySelector("#display svg.cfg .cfg-root")?.getBoundingClientRect();
+        const d = document.getElementById("display").getBoundingClientRect();
+        const inside = g && g.top >= d.top - 1 && g.left >= d.left - 1 && g.bottom <= d.bottom + 1 && g.right <= d.right + 1;
+        return inside && { g: [g.left, g.top, g.right, g.bottom].map(Math.round), d: [d.left, d.top, d.right, d.bottom].map(Math.round) };
+      }, { timeout: 2000 }).then((h) => h.jsonValue()).catch(() => null);
+      ev.push(`${when}: graph ${r ? `[${r.g}] inside #display [${r.d}]` : "NOT inside #display (clipped)"}`);
+      return !!r;
+    };
+    const fitShown = await fits("banner shown");
+    ok &&= fitShown;
     const s = await shot("11-tip-banner");
     await page.evaluate(() => { window.__posted.length = 0; });
     await page.click("#tip-dismiss");
+    const fitDismissed = await fits("banner dismissed");
+    ok &&= fitDismissed;
+    // Containment alone passes without a refit once the area grows, so also compare with a fresh Fit.
+    await settle();
+    const auto = await transform();
+    await page.click("#fit-view");
+    const refit = await transform();
+    ok &&= sameView(auto, refit);
+    ev.push(`after dismiss: ${fmt(auto)} vs Fit ${fmt(refit)} -> ${sameView(auto, refit) ? "refit ok" : "NOT refit"}`);
     const v2 = await visible("#tip-banner");
     const posted = await page.evaluate(() => window.__posted.slice());
     const state = await page.evaluate(() => window.__state);
