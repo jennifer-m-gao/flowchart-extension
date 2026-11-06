@@ -9,6 +9,7 @@ const crypto = require('crypto');
 function activate(context) {
 	let panel;
 	let webviewReady = false;
+	let updateTimer;
 	let sourceDocument = vscode.window.activeTextEditor?.document;
 
 	const updatePanel = () => {
@@ -58,6 +59,7 @@ function activate(context) {
 			}
 		);
 
+		const panelDisposables = [];
 		const nonce = getNonce();
 		const webviewPath = path.join(context.extensionPath, 'webview');
 		const scriptUri = panel.webview.asWebviewUri(
@@ -78,12 +80,16 @@ function activate(context) {
 				webviewReady = true;
 				updatePanel();
 			}
-		}, undefined, context.subscriptions);
+		}, undefined, panelDisposables);
 
 		panel.onDidDispose(() => {
 			panel = undefined;
 			webviewReady = false;
-		}, undefined, context.subscriptions);
+			clearTimeout(updateTimer);
+			while (panelDisposables.length) {
+				panelDisposables.pop().dispose();
+			}
+		});
 	};
 
 	context.subscriptions.push(
@@ -96,6 +102,13 @@ function activate(context) {
 		}),
 		vscode.workspace.onDidChangeTextDocument(event => {
 			if (event.document === sourceDocument) {
+				clearTimeout(updateTimer);
+				updateTimer = setTimeout(updatePanel, 150);
+			}
+		}),
+		vscode.workspace.onDidCloseTextDocument(document => {
+			if (document === sourceDocument) {
+				sourceDocument = undefined;
 				updatePanel();
 			}
 		})

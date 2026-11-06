@@ -8,6 +8,13 @@ const display = document.getElementById("display");
 const modeSelector = document.getElementById("diagram-mode");
 const timeTrack = document.getElementById("time-track");
 
+const savedState = vscode.getState();
+if (savedState?.mode) {
+  modeSelector.value = savedState.mode;
+  if (modeSelector.value === "") {
+    modeSelector.value = "functions";
+  }
+}
 let diagramMode = modeSelector.value;
 let currentCode = "";
 let updateCount = 0;
@@ -16,6 +23,7 @@ let typingTimer;
 
 modeSelector.addEventListener("change", () => {
   diagramMode = modeSelector.value;
+  vscode.setState({ mode: diagramMode });
   renderCurrentCode();
 });
 

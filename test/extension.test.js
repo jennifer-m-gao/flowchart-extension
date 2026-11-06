@@ -28,4 +28,13 @@ suite('Extension Test Suite', () => {
 	test('opens the visualizer from its command', async () => {
 		await vscode.commands.executeCommand('pychart-extension.openFlowchart');
 	});
+
+	test('opens and closes the visualizer repeatedly without errors', async () => {
+		const manifest = JSON.parse(fs.readFileSync(path.join(extensionRoot, 'package.json'), 'utf8'));
+		const commandId = manifest.contributes.commands[0].command;
+		for (let i = 0; i < 2; i++) {
+			await vscode.commands.executeCommand(commandId);
+			await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+		}
+	});
 });
