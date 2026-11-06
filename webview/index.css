@@ -66,3 +66,20 @@ body {
 #time-track {
   margin-left: auto;
 }
+
+.cfg { font-family: var(--vscode-editor-font-family, monospace); font-size: 12px; }
+.cfg-node rect, .cfg-node polygon { fill: var(--vscode-editorWidget-background); stroke: var(--vscode-editorWidget-border, var(--vscode-contrastBorder, #888)); stroke-width: 1; }
+.cfg-node--decision polygon, .cfg-node--loop polygon { fill: var(--vscode-editor-inactiveSelectionBackground); }
+.cfg-node--start rect, .cfg-node--end rect { fill: var(--vscode-button-secondaryBackground, var(--vscode-editorWidget-background)); }
+.cfg-node text { fill: var(--vscode-editor-foreground); }
+.cfg-node.is-unreachable { opacity: 0.5; }
+.cfg-node.is-unreachable rect, .cfg-node.is-unreachable polygon { stroke-dasharray: 4 3; }
+.cfg-node:focus { outline: none; }
+.cfg-node:focus rect, .cfg-node:focus polygon { stroke: var(--vscode-focusBorder); stroke-width: 2; }
+.cfg-edge path { fill: none; stroke: var(--vscode-editorLineNumber-foreground, #888); stroke-width: 1.2; }
+.cfg-edge--True path { stroke: var(--vscode-testing-iconPassed, #3fb950); }
+.cfg-edge--False path { stroke: var(--vscode-testing-iconFailed, #f85149); }
+.cfg-edge--exception path { stroke: var(--vscode-errorForeground, #f85149); stroke-dasharray: 5 3; }
+.cfg-edge--loop path { stroke-dasharray: 2 2; }
+.cfg-arrowhead { fill: var(--vscode-editorLineNumber-foreground, #888); }
+.cfg-edge-label { fill: var(--vscode-descriptionForeground); font-size: 10px; }

@@ -37,7 +37,8 @@
     "globals": "^15.0.0",
     "mermaid": "^11.4.1",
     "@vscode/test-cli": "^0.0.15",
-    "@vscode/test-electron": "^3.0.0"
+    "@vscode/test-electron": "^3.0.0",
+    "elkjs": "0.12.0"
   },
   "overrides": {
     "diff": "^8.0.4",
