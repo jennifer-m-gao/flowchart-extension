@@ -1,8 +1,9 @@
 {
-  "name": "flowchart-extension",
-  "displayName": "flowchart-extension",
+  "name": "pychart-extension",
+  "displayName": "PyChart",
   "description": "Visualizes Python code as flowcharts in VS Code",
-  "version": "0.0.1",
+  "version": "1.0.1",
+  "publisher": "JenniferGao",
   "engines": {
     "vscode": "^1.140.0"
   },
@@ -13,8 +14,8 @@
   "contributes": {
     "commands": [
       {
-        "command": "flowchart-extension.openFlowchart",
-        "title": "Flowchart: Open Visualizer"
+        "command": "pychart-extension.openFlowchart",
+        "title": "PyChart: Open Visualizer"
       }
     ]
   },

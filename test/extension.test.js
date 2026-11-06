@@ -21,11 +21,11 @@ suite('Extension Test Suite', () => {
 		assert.match(html, /id="time-track"/);
 		assert.doesNotMatch(html, /<textarea\b/i);
 		assert.ok(manifest.contributes.commands.some(command =>
-			command.command === 'flowchart-extension.openFlowchart'
+			command.command === 'pychart-extension.openFlowchart'
 		));
 	});
 
 	test('opens the visualizer from its command', async () => {
-		await vscode.commands.executeCommand('flowchart-extension.openFlowchart');
+		await vscode.commands.executeCommand('pychart-extension.openFlowchart');
 	});
 });
