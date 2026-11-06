@@ -33,6 +33,16 @@ body.vscode-light {
   --vscode-editorWidget-background:#f8f8f8; --vscode-editor-inactiveSelectionBackground:#e5ebf1;
   --vscode-editorCursor-foreground:#000000; --vscode-editorLineNumber-foreground:#6e7681;
   --vscode-testing-iconPassed:#388a34; --vscode-testing-iconFailed:#f14c4c; --vscode-errorForeground:#f85149;
+}
+/* Older "Light+" theme: light_vs.json colours plus the workbench light defaults (read from VS Code 1.145.1). */
+body.vscode-light.theme-lightplus {
+  --vscode-editor-background:#ffffff; --vscode-editor-foreground:#000000; --vscode-foreground:#616161;
+  --vscode-descriptionForeground:#717171; --vscode-focusBorder:#0090f1;
+  --vscode-editorWidget-background:#f3f3f3; --vscode-editorWidget-border:#61616133;
+  --vscode-button-secondaryBackground:#f0f0f0; --vscode-button-secondaryForeground:#616161;
+  --vscode-editor-inactiveSelectionBackground:#e5ebf1; --vscode-editorLineNumber-foreground:#237893;
+  --vscode-sideBar-background:#f3f3f3; --vscode-editorCursor-foreground:#000000;
+  --vscode-testing-iconPassed:#73c991; --vscode-testing-iconFailed:#f14c4c; --vscode-errorForeground:#a1260d;
 }`;
 
 export function defaultCandidates() {

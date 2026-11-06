@@ -333,6 +333,7 @@ try {
         statementFill: cs(".cfg-node--statement:not(.is-current) rect", "fill"),
         decisionFill: cs(".cfg-node--decision polygon", "fill"),
         startFill: cs(".cfg-node--start rect", "fill"),
+        startText: cs(".cfg-node--start text", "fill"),
         nodeStroke: cs(".cfg-node--statement:not(.is-current) rect", "stroke"),
         text: cs(".cfg-node--statement:not(.is-current) text", "fill"),
         edgeStroke: cs(".cfg-edge--plain path", "stroke"),
@@ -341,24 +342,29 @@ try {
     const out = {};
     const ev = [];
     let ok = true;
-    for (const theme of ["vscode-dark", "vscode-light"]) {
+    const shots = [];
+    for (const theme of ["vscode-dark", "vscode-light", "vscode-light theme-lightplus"]) {
       await page.evaluate((t) => { document.body.className = t; }, theme);
       const c = await read();
       out[theme] = c;
-      const ratios = { statement: contrast(c.text, c.statementFill), decision: contrast(c.text, c.decisionFill), start: contrast(c.text, c.startFill) };
+      const ratios = { statement: contrast(c.text, c.statementFill), decision: contrast(c.text, c.decisionFill), start: contrast(c.startText, c.startFill) };
       const low = Object.entries(ratios).filter(([, r]) => r < 4.5);
-      // Edges are graphics: WCAG 1.4.11 asks 3:1 against the background.
+      // Edges and box borders are graphics: WCAG 1.4.11 asks 3:1 against the background.
       const edgeRatio = contrast(c.edgeStroke, c.background);
-      ok &&= low.length === 0 && edgeRatio >= 3 && Object.values(c).every(Boolean);
+      const borderRatio = contrast(c.nodeStroke, c.background);
+      ok &&= low.length === 0 && edgeRatio >= 3 && borderRatio >= 3 && Object.values(c).every(Boolean);
       ev.push(`${theme}: ${JSON.stringify(c)}`);
-      ev.push(`${theme} text contrast: ${Object.entries(ratios).map(([k, r]) => `${k} ${r.toFixed(2)}:1`).join(", ")}${low.length ? "  BELOW 4.5" : ""}; edge vs background ${edgeRatio.toFixed(2)}:1`);
-      ev.push(`  screenshot ${await shot(`07-theme-${theme}`)}`);
+      ev.push(`${theme} text contrast: ${Object.entries(ratios).map(([k, r]) => `${k} ${r.toFixed(2)}:1`).join(", ")}${low.length ? "  BELOW 4.5" : ""}; edge vs background ${edgeRatio.toFixed(2)}:1; border vs background ${borderRatio.toFixed(2)}:1${borderRatio < 3 ? "  BELOW 3" : ""}`);
+      const s = await shot(`07-theme-${theme.replace(" ", "-")}`);
+      shots.push(s);
+      ev.push(`  screenshot ${s}`);
     }
     const same = Object.keys(out["vscode-dark"]).filter((k) => out["vscode-dark"][k] === out["vscode-light"][k]);
-    // editorLineNumber.foreground is #6e7681 in both Dark Modern and Light Modern, so the edge colour may legitimately match.
-    ok &&= same.every((k) => k === "edgeStroke");
-    ev.push(`same in both themes: ${same.join(", ") || "none"}${same.includes("edgeStroke") ? " (expected: both themes define editorLineNumber.foreground = #6e7681)" : ""}`);
-    report(7, "Themes", ok, ev, "shots/07-theme-vscode-dark.png, shots/07-theme-vscode-light.png");
+    // editorLineNumber.foreground is #6e7681 in both Dark Modern and Light Modern, so edges and box borders may legitimately match.
+    const shared = ["edgeStroke", "nodeStroke"];
+    ok &&= same.every((k) => shared.includes(k));
+    ev.push(`same in dark and Modern light: ${same.join(", ") || "none"}${same.some((k) => shared.includes(k)) ? " (expected: both themes define editorLineNumber.foreground = #6e7681)" : ""}`);
+    report(7, "Themes", ok, ev, shots.join(", "));
     await page.evaluate(() => { document.body.className = "vscode-dark"; });
   }
 } catch (error) {
