@@ -120,3 +120,41 @@ test("hideBuiltins never hides a user def named like a built-in", () => {
   const g = functions("def print():\n  pass\ndef a():\n  print()\n", { hideBuiltins: true });
   assert.deepEqual(labelEdges(g), ["a --> print"]);
 });
+
+test("self.m() links to the method of the enclosing class", () => {
+  const g = functions("class Cart:\n  def a(self):\n    self.b()\n  def b(self):\n    pass\n");
+  assert.deepEqual(labelEdges(g), ["Cart.a --> Cart.b"]);
+});
+
+test("self.m() to an unknown method adds nothing", () => {
+  const g = functions("class Cart:\n  def a(self):\n    self.nope()\n");
+  assert.equal(g.edges.length, 0);
+  assert.deepEqual(labels(g), ["Cart.a"]);
+});
+
+test("cls.m() links to the classmethod", () => {
+  const g = functions("class K:\n  @classmethod\n  def make(cls):\n    cls.setup()\n  @classmethod\n  def setup(cls):\n    pass\n");
+  assert.deepEqual(labelEdges(g), ["K.make --> K.setup"]);
+});
+
+test("calling a class links to its __init__", () => {
+  const g = functions("class Cart:\n  def __init__(self):\n    pass\ndef main():\n  Cart()\n");
+  assert.deepEqual(labelEdges(g), ["main --> Cart.__init__"]);
+  assert.ok(!labels(g).includes("Cart"));
+});
+
+test("calling a class without __init__ stays external", () => {
+  const g = functions("class Foo:\n  pass\ndef main():\n  Foo()\n");
+  assert.deepEqual(labelEdges(g), ["main --> Foo"]);
+  assert.equal(g.nodes.find((n) => n.label === "Foo").kind, "external");
+});
+
+test("self.m() in a function nested in a method is not resolved", () => {
+  const g = functions("class C:\n  def m(self):\n    def inner():\n      self.m()\n    inner()\n");
+  assert.ok(!labelEdges(g).includes("C.m.inner --> C.m"));
+  assert.ok(!labelEdges(g).some((e) => e.startsWith("C.m.inner -->")));
+});
+
+test("obj.method() on other objects is not resolved", () => {
+  assert.equal(functions("def a(obj):\n  obj.go()\n").edges.length, 0);
+});
