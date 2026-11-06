@@ -9,3 +9,5 @@ test/**
 **/eslint.config.mjs
 **/.vscode-test.*
 scripts/**
+plans/**
+.claude/**
