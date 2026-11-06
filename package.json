@@ -2,6 +2,7 @@
   "name": "pychart-extension",
   "displayName": "PyChart",
   "description": "Visualizes Python code as flowcharts in VS Code",
+  "repository": { "type": "git", "url": "https://github.com/jennifer-m-gao/flowchart-extension" },
   "version": "1.0.1",
   "publisher": "JenniferGao",
   "engines": {
