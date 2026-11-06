@@ -19,6 +19,7 @@ function activate(context) {
 	};
 
 	const updatePanel = () => {
+		updateTimer = undefined; // no text-change update pending any more
 		if (!panel || !webviewReady) {
 			return;
 		}
@@ -132,7 +133,8 @@ function activate(context) {
 			}
 			clearTimeout(cursorTimer);
 			cursorTimer = setTimeout(() => {
-				if (panel && webviewReady) {
+				// a pending setCode already carries the fresh offset; a stale-order setCursor would use the old document
+				if (panel && webviewReady && updateTimer === undefined) {
 					panel.webview.postMessage({ type: 'setCursor', offset: sourceDocument.offsetAt(event.selections[0].active) });
 				}
 			}, 50);

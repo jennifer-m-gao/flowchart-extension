@@ -8,3 +8,4 @@ test/**
 **/*.map
 **/eslint.config.mjs
 **/.vscode-test.*
+scripts/**

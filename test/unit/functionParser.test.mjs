@@ -1,8 +1,7 @@
-import { readFileSync } from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { parser } from "@lezer/python";
-import { functionGraph, parseFunctions } from "../../webview/functionParser.js";
+import { functionGraph } from "../../webview/functionParser.js";
 
 function functions(source) {
   return functionGraph(parser.parse(source), source);
@@ -43,14 +42,6 @@ test("call to unknown function becomes an external node", () => {
 
 test("method calls are ignored", () => {
   assert.equal(functions("def a():\n  obj.m()\n").edges.length, 0);
-});
-
-test("parseFunctions adapter keeps the Mermaid output (whole output)", () => {
-  const source = "def a():\n  b()\n  b()\n";
-  assert.equal(
-    parseFunctions(parser.parse(source), source),
-    'flowchart TD\n    function0["a"]\n    external1["b"]\n    function0 --> external1\n'
-  );
 });
 
 test("repeated calls produce a single edge", () => {
@@ -107,9 +98,4 @@ test("externals have no source range", () => {
   const ext = node(functions("def a():\n  print(1)\n"), "external1");
   assert.equal(ext.from, null);
   assert.equal(ext.to, null);
-});
-
-test("functions mode uses the shared escaper", () => {
-  const src = readFileSync(new URL("../../webview/functionParser.js", import.meta.url), "utf8");
-  assert.match(src, /from "\.\/escapeLabel\.js"/);
 });

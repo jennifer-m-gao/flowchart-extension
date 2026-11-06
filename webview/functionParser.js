@@ -1,4 +1,3 @@
-import { escapeLabel } from "./escapeLabel.js";
 const FUNCTION_DEFINITION = "FunctionDefinition";
 const CLASS_DEFINITION = "ClassDefinition";
 const CALL_EXPRESSION = "CallExpression";
@@ -39,22 +38,6 @@ export function functionGraph(tree, code) {
   ];
 
   return { nodes, edges };
-}
-
-// Mermaid adapter for the old renderer; removed with Mermaid in plan 015.
-export function parseFunctions(tree, code) {
-  const { nodes, edges } = functionGraph(tree, code);
-  let mermaidCode = "flowchart TD\n";
-
-  for (const node of nodes) {
-    mermaidCode += `    ${node.id}["${escapeLabel(node.label)}"]\n`;
-  }
-
-  for (const edge of edges) {
-    mermaidCode += `    ${edge.source} --> ${edge.target}\n`;
-  }
-
-  return mermaidCode;
 }
 
 function findFunctions(cursor, code, functions, scope) {
