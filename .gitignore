@@ -3,3 +3,5 @@ node_modules
 *.vsix
 .env
 dist/
+test/ui/shots/
+test/ui/results.json

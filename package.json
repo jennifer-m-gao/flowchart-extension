@@ -28,6 +28,7 @@
     "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=\"webview/cfg/**\" --test-coverage-lines=90 \"test/unit/*.test.mjs\"",
     "check:bundle": "node scripts/check-bundle.mjs",
     "bench": "node scripts/bench.mjs",
+    "test:ui": "npm run build:webview && node test/ui/run.mjs",
     "pretest": "npm run test:coverage && npm run build:webview && npm run check:bundle && npm run lint",
     "test": "vscode-test"
   },
@@ -41,7 +42,8 @@
     "elkjs": "0.12.0",
     "esbuild": "^0.25.0",
     "eslint": "^10.5.0",
-    "globals": "^15.0.0"
+    "globals": "^15.0.0",
+    "puppeteer-core": "25.12.0"
   },
   "overrides": {
     "diff": "^8.0.4",

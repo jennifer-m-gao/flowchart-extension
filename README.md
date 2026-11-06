@@ -38,4 +38,5 @@ Initial release of PyChart
 - `npm run test:coverage` runs them and fails below 90% line coverage on `webview/cfg`.
 - `npm run bench` times a 200-line function's re-render pipeline and fails if the median is 300 ms or more.
 - `npm run check:bundle` fails if `dist/webview/bundle.js` is 3.4 MiB or larger.
+- `npm run test:ui` runs the webview in headless Chrome/Edge (found automatically, or set `CHROME=<path>`), under the real CSP, and checks pan/zoom, click-to-source, cursor highlight, follow-cursor, Functions mode and themes. Run it before every release. Screenshots land in `test/ui/shots/`.
 - `npm test` runs the gates above, builds, lints, and runs the extension integration tests in a downloaded VS Code instance.
