@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { toSvg, xml } from "../../webview/render/toSvg.js";
+import { nodeHint, toSvg, xml } from "../../webview/render/toSvg.js";
 
 const graph = {
   nodes: [
@@ -85,6 +85,22 @@ test("edges come before nodes, with path, arrow, kind class and label", () => {
   assert.ok(svg.includes('<g class="cfg-edge cfg-edge--plain"><path d="M 48,44 L 48,76" marker-end="url(#cfg-arrow)"/></g>'));
   assert.ok(svg.includes('<g class="cfg-edge cfg-edge--True"><path d="M 82,132 L 82,148 L 52,148 L 52,164" marker-end="url(#cfg-arrow)"/>'));
   assert.ok(svg.includes('<text class="cfg-edge-label" x="47.5" y="151" text-anchor="middle">True</text>'));
+});
+
+test("each node's first child is a <title> hint", () => {
+  assert.ok(nodeBody("n1").startsWith(` data-kind="statement" data-from="14" data-to="19" transform="translate(12,164)" tabindex="0" role="button" aria-label="statement: x = 1"><title>x = 1\nClick or Enter: go to code</title><rect`));
+  assert.equal(nodeHint({ label: "x = 1", from: 14, to: 19 }), "x = 1\nClick or Enter: go to code");
+});
+
+test("external nodes hint that they are not defined here", () => {
+  assert.ok(nodeBody("external3").includes("<title>print\nNot defined in this file</title>"));
+});
+
+test("title hints are XML-escaped", () => {
+  assert.ok(nodeBody("n0").includes("<title>a &lt; b &amp; &quot;c&quot;\nClick or Enter: go to code</title>"));
+  for (const [, inner] of svg.matchAll(/<title>(.*?)<\/title>/gs)) {
+    assert.ok(!inner.includes("<"));
+  }
 });
 
 test("no inline styles or colors in the output", () => {

@@ -6,6 +6,12 @@ export function xml(s) {
 
 const num = (n) => Math.round(n * 10) / 10;
 
+// Native tooltip text for a box (emitted as its SVG <title>).
+// TODO(drill-down plan): function nodes in Functions mode add "Double-click: open its flowchart".
+export function nodeHint(node) {
+  return `${node.label}\n${node.from == null ? "Not defined in this file" : "Click or Enter: go to code"}`;
+}
+
 export function toSvg(laidOut, graph) {
   const W = num(laidOut.width + 32);
   const H = num(laidOut.height + 32);
@@ -36,6 +42,7 @@ export function toSvg(laidOut, graph) {
     const cls = `cfg-node cfg-node--${xml(node.kind)}${node.unreachable ? " is-unreachable" : ""}`;
     const range = node.from == null ? "" : ` data-from="${xml(node.from)}" data-to="${xml(node.to)}"`;
     out += `<g class="${cls}" data-id="${xml(node.id)}" data-kind="${xml(node.kind)}"${range} transform="translate(${num(child.x)},${num(child.y)})" tabindex="0" role="button" aria-label="${xml(`${node.kind}: ${node.label}`)}">`;
+    out += `<title>${xml(nodeHint(node))}</title>`;
     if (node.kind === "decision" || node.kind === "loop") {
       out += `<polygon points="${num(w / 2)},0 ${w},${num(h / 2)} ${num(w / 2)},${h} 0,${num(h / 2)}"/>`;
     } else if (node.kind === "start" || node.kind === "end") {
