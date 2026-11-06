@@ -445,3 +445,9 @@ test("half-typed compound statements never throw and still reach End", () => {
   }
   assert.deepEqual(edges(functionCfg("def g(")), ["def g( -> End"]);
 });
+
+test("loop back-edge from an if's False branch keeps the False label", () => {
+  const e = edges(moduleCfg("for x in xs:\n  if x:\n    y()\n"));
+  assert.ok(e.includes("if x -False-> for x in xs"), e.join("\n"));
+  assert.ok(e.includes("y() -loop-> for x in xs"), e.join("\n"));
+});

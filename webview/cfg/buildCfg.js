@@ -139,7 +139,7 @@ export function buildCfg(scopeNode, code) {
     const entry = { loopId: loop, breaks: [], frameDepth: ctx.frames.length };
     ctx.loops.push(entry);
     const bodyExits = buildBody(cls[0].body, [{ source: loop, label: enterLabel }], ctx);
-    connect(bodyExits.map(e => ({ source: e.source, label: "loop" })), loop);
+    connect(bodyExits.map(e => ({ source: e.source, label: e.label ?? "loop" })), loop);
     ctx.loops.pop();
     let exits = [{ source: loop, label: exitLabel }];
     const elseClause = cls.find(c => c.kw === "else");
