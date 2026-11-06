@@ -25,7 +25,7 @@
     "vscode:prepublish": "npm run build:webview",
     "lint": "eslint .",
     "test:unit": "node --test \"test/unit/*.test.mjs\"",
-    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=\"webview/cfg/**\" --test-coverage-lines=90 \"test/unit/*.test.mjs\"",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=\"webview/cfg/**\" --test-coverage-include=\"webview/run/**\" --test-coverage-lines=90 \"test/unit/*.test.mjs\"",
     "check:bundle": "node scripts/check-bundle.mjs",
     "bench": "node scripts/bench.mjs",
     "test:ui": "npm run build:webview && node test/ui/run.mjs",
