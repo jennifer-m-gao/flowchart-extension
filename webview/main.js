@@ -3,7 +3,7 @@ import { buildCfg } from "./cfg/buildCfg.js";
 import { findScope } from "./cfg/findScope.js";
 import { renderGraph } from "./render/renderGraph.js";
 import { createViewStack } from "./viewStack.js";
-import { mergeState, migrateMode, renderAction, scopeKey } from "./viewState.js";
+import { mergeState, migrateMode, renderAction, scopeKey, shouldShowTip } from "./viewState.js";
 import { nodeAtOffset } from "./interact/nodeAtOffset.js";
 import { revealRange } from "./interact/revealRange.js";
 import { fit, identity, panBy, toTransform, zoomAt } from "./interact/viewport.js";
@@ -17,6 +17,11 @@ const hideBuiltins = document.getElementById("hide-builtins");
 const scopeTitle = document.getElementById("scope-title");
 const timeTrack = document.getElementById("time-track");
 const fitButton = document.getElementById("fit-view");
+const helpButton = document.getElementById("help-button");
+const helpDialog = document.getElementById("help-dialog");
+const helpClose = document.getElementById("help-close");
+const tipBanner = document.getElementById("tip-banner");
+const tipDismiss = document.getElementById("tip-dismiss");
 
 // setState replaces everything: always merge, or one setting wipes the others.
 const saveState = (patch) => vscode.setState(mergeState(vscode.getState(), patch));
@@ -89,6 +94,8 @@ window.addEventListener("message", (event) => {
     if (typingTimer === undefined) {
       update();
     }
+  } else if (message.type === "tipState") {
+    tipBanner.hidden = !shouldShowTip(vscode.getState(), message.dismissed);
   } else if (message.type === "setMessage") {
     clearTimeout(typingTimer);
     typingTimer = undefined;
@@ -288,7 +295,34 @@ fitButton.addEventListener("click", () => {
   }
 });
 
+function openHelp() {
+  helpDialog.hidden = false;
+  helpClose.focus();
+}
+
+function closeHelp() {
+  helpDialog.hidden = true;
+  helpButton.focus();
+}
+
+helpButton.addEventListener("click", () => (helpDialog.hidden ? openHelp() : closeHelp()));
+helpClose.addEventListener("click", closeHelp);
+
+tipDismiss.addEventListener("click", () => {
+  tipBanner.hidden = true;
+  saveState({ tipDismissed: true });
+  vscode.postMessage({ type: "tipDismissed" });
+});
+
 document.addEventListener("keydown", (event) => {
+  // While the cheat sheet is open, keys only close it: the diagram's keys must not act behind it.
+  if (!helpDialog.hidden) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeHelp();
+    }
+    return;
+  }
   const target = event.target;
   const node = target.closest?.(".cfg-node[data-from]");
   if (node && (event.key === "Enter" || event.key === " ")) {
@@ -296,7 +330,15 @@ document.addEventListener("keydown", (event) => {
     reveal(node);
     return;
   }
-  if (!root || target.closest?.("select, input") || event.ctrlKey || event.metaKey || event.altKey) {
+  if (target.closest?.("select, input") || event.ctrlKey || event.metaKey || event.altKey) {
+    return;
+  }
+  if (event.key === "?") {
+    event.preventDefault();
+    openHelp();
+    return;
+  }
+  if (!root) {
     return;
   }
   const cx = display.clientWidth / 2;

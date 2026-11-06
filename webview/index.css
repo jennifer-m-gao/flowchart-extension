@@ -102,3 +102,42 @@ body {
 .cfg-edge--loop path { stroke-dasharray: 2 2; }
 .cfg-arrowhead { fill: var(--vscode-editorLineNumber-foreground, #888); }
 .cfg-edge-label { fill: var(--vscode-descriptionForeground); font-size: 10px; }
+
+.flowchart { position: relative; }
+
+#tip-banner {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border);
+  color: var(--vscode-foreground);
+  background: var(--vscode-editorWidget-background);
+  font-size: 12px;
+}
+
+#tip-dismiss { margin-left: auto; }
+
+/* Over the diagram area, above the toolbar. */
+#help-dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(460px, calc(100% - 32px));
+  max-height: calc(100% - 80px);
+  overflow: auto;
+  padding: 12px 20px 16px;
+  border: 1px solid var(--vscode-editorWidget-border);
+  border-radius: 6px;
+  color: var(--vscode-foreground);
+  background: var(--vscode-editorWidget-background);
+  font-size: 12px;
+}
+
+#help-dialog h2 { margin: 0 0 8px; font-size: 14px; }
+#help-dialog ul { margin: 0 0 12px; padding-left: 18px; line-height: 1.6; }
+
+/* An id rule's display would otherwise beat the hidden attribute. */
+#tip-banner[hidden], #help-dialog[hidden] { display: none; }

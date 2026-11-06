@@ -86,7 +86,10 @@ function activate(context) {
 		panel.webview.onDidReceiveMessage(message => {
 			if (message.type === 'ready') {
 				webviewReady = true;
+				panel.webview.postMessage({ type: 'tipState', dismissed: context.globalState.get('pychart.tipDismissed', false) });
 				updatePanel();
+			} else if (message.type === 'tipDismissed') {
+				context.globalState.update('pychart.tipDismissed', true);
 			} else if (message.type === 'reveal' && sourceDocument
 				&& Number.isInteger(message.from) && Number.isInteger(message.to)) {
 				const length = sourceDocument.getText().length;
