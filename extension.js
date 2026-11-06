@@ -86,6 +86,18 @@ function activate(context) {
 			if (message.type === 'ready') {
 				webviewReady = true;
 				updatePanel();
+			} else if (message.type === 'reveal' && sourceDocument
+				&& Number.isInteger(message.from) && Number.isInteger(message.to)) {
+				const length = sourceDocument.getText().length;
+				const from = Math.max(0, Math.min(message.from, length));
+				const to = Math.max(from, Math.min(message.to, length));
+				const editor = vscode.window.visibleTextEditors.find(e => e.document === sourceDocument);
+				const range = new vscode.Range(sourceDocument.positionAt(from), sourceDocument.positionAt(to));
+				vscode.window.showTextDocument(sourceDocument, {
+					viewColumn: editor ? editor.viewColumn : vscode.ViewColumn.One,
+					selection: range,
+					preserveFocus: false
+				}).then(shown => shown.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport));
 			}
 		}, undefined, panelDisposables);
 
