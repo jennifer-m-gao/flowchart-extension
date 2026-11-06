@@ -23,7 +23,8 @@
     "build:webview": "esbuild webview/main.js --bundle --minify --format=iife --outfile=dist/webview/bundle.js",
     "vscode:prepublish": "npm run build:webview",
     "lint": "eslint .",
-    "pretest": "npm run build:webview && npm run lint",
+    "test:unit": "node --test \"test/unit/*.test.mjs\"",
+    "pretest": "npm run test:unit && npm run build:webview && npm run lint",
     "test": "vscode-test"
   },
   "devDependencies": {
