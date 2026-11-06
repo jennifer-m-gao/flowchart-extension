@@ -45,4 +45,10 @@ test("function with repeated calls (whole output)", () => {
 test.todo("1.1 CFG: compound statements (if/for/while) emit only their header line, not the whole body");
 test.todo("1.1 CFG: statements nested in if/for/while bodies are not duplicated");
 test.todo("1.1 CFG: augmented assignment (x += 1, UpdateStatement) appears in the timeline");
-test.todo("plan 004: < and > in labels are escaped as #lt; / #gt;");
+
+test("< and > in labels are escaped as #lt; / #gt;", () => {
+  const out = timeline("x = a < b > c\n");
+  assert.ok(out.includes('n0["x = a #lt; b #gt; c"]'));
+  const line = out.split("\n").find((l) => l.includes("n0["));
+  assert.ok(!/[<>]/.test(line));
+});

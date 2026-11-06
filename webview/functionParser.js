@@ -1,3 +1,4 @@
+import { escapeLabel } from "./escapeLabel.js";
 const FUNCTION_DEFINITION = "FunctionDefinition";
 const CALL_EXPRESSION = "CallExpression";
 const VARIABLE_NAME = "VariableName";
@@ -90,6 +91,3 @@ function findCalls(cursor, code, currentFunction, functions) {
   }
 }
 
-function escapeLabel(label) {
-  return label.replace(/&/g, "#amp;").replace(/"/g, "#quot;");
-}

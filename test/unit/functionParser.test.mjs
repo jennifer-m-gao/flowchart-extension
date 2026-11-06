@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { parser } from "@lezer/python";
@@ -45,4 +46,8 @@ test("function with repeated calls (whole output)", () => {
 test.todo("plan 006: repeated calls produce a single edge");
 test.todo("plan 006: same-named methods in different classes are separate nodes");
 test.todo("plan 006: calls inside a nested function are not attributed to the outer function");
-test.todo("plan 004: < and > in labels are escaped as #lt; / #gt;");
+
+test("functions mode uses the shared escaper", () => {
+  const src = readFileSync(new URL("../../webview/functionParser.js", import.meta.url), "utf8");
+  assert.match(src, /from "\.\/escapeLabel\.js"/);
+});

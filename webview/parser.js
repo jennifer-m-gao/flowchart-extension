@@ -1,3 +1,4 @@
+import { escapeLabel } from "./escapeLabel.js";
 const STATEMENT_TYPES = new Set([
   "AssignStatement",
   "AugAssignStatement",
@@ -53,9 +54,3 @@ export function parseCode(tree, code) {
   return mermaidCode;
 }
 
-function escapeLabel(label) {
-  return label
-    .replace(/&/g, "#amp;")
-    .replace(/"/g, "#quot;")
-    .replace(/\n/g, "#10;");
-}
