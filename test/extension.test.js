@@ -17,7 +17,8 @@ suite('Extension Test Suite', () => {
 		assert.match(html, /<footer class="diagram-toolbar">/);
 		assert.match(html, /<select id="diagram-mode">/);
 		assert.match(html, /<option value="functions">/);
-		assert.match(html, /<option value="timeline">/);
+		assert.match(html, /<option value="flow">/);
+		assert.match(html, /id="whole-file"/);
 		assert.match(html, /id="time-track"/);
 		assert.doesNotMatch(html, /<textarea\b/i);
 		assert.ok(manifest.contributes.commands.some(command =>

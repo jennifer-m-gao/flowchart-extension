@@ -13,9 +13,11 @@
     <footer class="diagram-toolbar">
       <label for="diagram-mode">Mode</label>
       <select id="diagram-mode">
+        <option value="flow">Flow</option>
         <option value="functions">Functions</option>
-        <option value="timeline">Timeline</option>
       </select>
+      <label class="whole-file"><input type="checkbox" id="whole-file"> Whole file</label>
+      <span id="scope-title" aria-live="polite"></span>
       <div id="time-track" aria-label="Diagram updates">0</div>
     </footer>
   </main>

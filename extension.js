@@ -10,7 +10,13 @@ function activate(context) {
 	let panel;
 	let webviewReady = false;
 	let updateTimer;
+	let cursorTimer;
 	let sourceDocument = vscode.window.activeTextEditor?.document;
+
+	const sourceOffset = () => {
+		const editor = vscode.window.visibleTextEditors.find(e => e.document === sourceDocument);
+		return editor ? sourceDocument.offsetAt(editor.selection.active) : 0;
+	};
 
 	const updatePanel = () => {
 		if (!panel || !webviewReady) {
@@ -35,7 +41,8 @@ function activate(context) {
 
 		panel.webview.postMessage({
 			type: 'setCode',
-			code: sourceDocument.getText()
+			code: sourceDocument.getText(),
+			offset: sourceOffset()
 		});
 	};
 
@@ -86,6 +93,7 @@ function activate(context) {
 			panel = undefined;
 			webviewReady = false;
 			clearTimeout(updateTimer);
+			clearTimeout(cursorTimer);
 			while (panelDisposables.length) {
 				panelDisposables.pop().dispose();
 			}
@@ -103,8 +111,19 @@ function activate(context) {
 		vscode.workspace.onDidChangeTextDocument(event => {
 			if (event.document === sourceDocument) {
 				clearTimeout(updateTimer);
-				updateTimer = setTimeout(updatePanel, 150);
+				updateTimer = setTimeout(updatePanel, 100);
 			}
+		}),
+		vscode.window.onDidChangeTextEditorSelection(event => {
+			if (!panel || !webviewReady || event.textEditor.document !== sourceDocument) {
+				return;
+			}
+			clearTimeout(cursorTimer);
+			cursorTimer = setTimeout(() => {
+				if (panel && webviewReady) {
+					panel.webview.postMessage({ type: 'setCursor', offset: sourceDocument.offsetAt(event.selections[0].active) });
+				}
+			}, 50);
 		}),
 		vscode.workspace.onDidCloseTextDocument(document => {
 			if (document === sourceDocument) {

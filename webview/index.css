@@ -67,6 +67,17 @@ body {
   margin-left: auto;
 }
 
+.whole-file {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+#scope-title {
+  color: var(--vscode-foreground);
+  font-weight: 600;
+}
+
 .cfg { font-family: var(--vscode-editor-font-family, monospace); font-size: 12px; }
 .cfg-node rect, .cfg-node polygon { fill: var(--vscode-editorWidget-background); stroke: var(--vscode-editorWidget-border, var(--vscode-contrastBorder, #888)); stroke-width: 1; }
 .cfg-node--decision polygon, .cfg-node--loop polygon { fill: var(--vscode-editor-inactiveSelectionBackground); }
