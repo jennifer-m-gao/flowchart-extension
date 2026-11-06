@@ -3,18 +3,20 @@ const FUNCTION_DEFINITION = "FunctionDefinition";
 const CLASS_DEFINITION = "ClassDefinition";
 const CALL_EXPRESSION = "CallExpression";
 const VARIABLE_NAME = "VariableName";
+const DECORATED_STATEMENT = "DecoratedStatement";
 
-export function parseFunctions(tree, code) {
+export function functionGraph(tree, code) {
   const functions = new Map();
 
   findFunctions(tree.cursor(), code, functions, []);
 
   const nodeIds = new Map([...functions.keys()].map((name, index) => [name, `function${index}`]));
   const externalIds = new Map();
-  const edges = new Set();
+  const edgeKeys = new Set();
+  const edges = [];
   let nextId = nodeIds.size;
 
-  for (const [caller, calls] of functions) {
+  for (const [caller, { calls }] of functions) {
     for (const calledName of calls) {
       // Bare calls only reach top-level defs; nested defs and methods are not callable by bare name.
       let target = functions.has(calledName) && !calledName.includes(".") ? nodeIds.get(calledName) : externalIds.get(calledName);
@@ -22,18 +24,34 @@ export function parseFunctions(tree, code) {
         target = `external${nextId++}`;
         externalIds.set(calledName, target);
       }
-      edges.add(`${nodeIds.get(caller)} --> ${target}`);
+      const source = nodeIds.get(caller);
+      const key = `${source} --> ${target}`;
+      if (!edgeKeys.has(key)) {
+        edgeKeys.add(key);
+        edges.push({ source, target });
+      }
     }
   }
 
+  const nodes = [
+    ...[...nodeIds].map(([name, id]) => ({ id, kind: "function", label: name, from: functions.get(name).from, to: functions.get(name).to })),
+    ...[...externalIds].map(([name, id]) => ({ id, kind: "external", label: name, from: null, to: null })),
+  ];
+
+  return { nodes, edges };
+}
+
+// Mermaid adapter for the old renderer; removed with Mermaid in plan 015.
+export function parseFunctions(tree, code) {
+  const { nodes, edges } = functionGraph(tree, code);
   let mermaidCode = "flowchart TD\n";
 
-  for (const [name, id] of [...nodeIds, ...externalIds]) {
-    mermaidCode += `    ${id}["${escapeLabel(name)}"]\n`;
+  for (const node of nodes) {
+    mermaidCode += `    ${node.id}["${escapeLabel(node.label)}"]\n`;
   }
 
   for (const edge of edges) {
-    mermaidCode += `    ${edge}\n`;
+    mermaidCode += `    ${edge.source} --> ${edge.target}\n`;
   }
 
   return mermaidCode;
@@ -49,7 +67,9 @@ function findFunctions(cursor, code, functions, scope) {
       childScope = [...scope, name];
       if (isFunction) {
         const qualified = childScope.join(".");
-        functions.set(qualified, new Set());
+        const def = cursor.node;
+        const from = def.parent?.name === DECORATED_STATEMENT ? def.parent.from : def.from;
+        functions.set(qualified, { calls: new Set(), from, to: def.to });
         findCalls(cursor, code, qualified, functions);
       }
     }
@@ -84,7 +104,7 @@ function findDefinitionName(cursor, code) {
 function findCalls(cursor, code, currentFunction, functions) {
   if (cursor.firstChild()) {
     do {
-      collectCalls(cursor, code, functions.get(currentFunction));
+      collectCalls(cursor, code, functions.get(currentFunction).calls);
     } while (cursor.nextSibling());
     cursor.parent();
   }

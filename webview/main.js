@@ -1,6 +1,7 @@
-import { parseFunctions } from "./functionParser.js";
+import { functionGraph } from "./functionParser.js";
 import { parseCode } from "./parser.js";
 import { renderDiagram } from "./render.js";
+import { renderGraph } from "./render/renderGraph.js";
 import { parser } from "@lezer/python";
 
 const vscode = acquireVsCodeApi();
@@ -46,10 +47,9 @@ async function renderCurrentCode() {
 
   try {
     const tree = parser.parse(currentCode);
-    const diagram = diagramMode === "functions"
-      ? parseFunctions(tree, currentCode)
-      : parseCode(tree, currentCode);
-    const svg = await renderDiagram(diagram);
+    const svg = diagramMode === "functions"
+      ? await renderGraph(functionGraph(tree, currentCode))
+      : await renderDiagram(parseCode(tree, currentCode));
 
     if (revision !== renderRevision) {
       return;

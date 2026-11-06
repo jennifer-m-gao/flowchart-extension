@@ -2,90 +2,111 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { parser } from "@lezer/python";
-import { parseFunctions } from "../../webview/functionParser.js";
+import { functionGraph, parseFunctions } from "../../webview/functionParser.js";
 
 function functions(source) {
-  return parseFunctions(parser.parse(source), source);
+  return functionGraph(parser.parse(source), source);
 }
 
-const edges = (out) => out.split("\n").filter((l) => l.includes("-->")).map((l) => l.trim());
-const labels = (out) => [...out.matchAll(/\["([^"]*)"\]/g)].map((m) => m[1]);
-function labelEdges(out) {
-  const ids = new Map([...out.matchAll(/^\s+(\w+)\["([^"]*)"\]$/gm)].map((m) => [m[1], m[2]]));
-  return edges(out).map((e) => e.split(" --> ").map((id) => ids.get(id)).join(" --> "));
+const edges = (g) => g.edges.map((e) => `${e.source} --> ${e.target}`);
+const labels = (g) => g.nodes.map((n) => n.label);
+function labelEdges(g) {
+  const ids = new Map(g.nodes.map((n) => [n.id, n.label]));
+  return g.edges.map((e) => `${ids.get(e.source)} --> ${ids.get(e.target)}`);
 }
+const node = (g, id) => g.nodes.find((n) => n.id === id);
 
 test("no functions gives an empty graph", () => {
-  assert.equal(functions("x = 1\n"), "flowchart TD\n");
+  assert.deepEqual(functions("x = 1\n"), { nodes: [], edges: [] });
 });
 
 test("single function without calls has no edges", () => {
-  const out = functions("def a():\n  pass\n");
-  assert.ok(out.includes('function0["a"]'));
-  assert.ok(!out.includes("-->"));
+  const g = functions("def a():\n  pass\n");
+  assert.equal(node(g, "function0").label, "a");
+  assert.equal(g.edges.length, 0);
 });
 
 test("call between defined functions links them", () => {
-  const out = functions("def a():\n  b()\ndef b():\n  pass\n");
-  assert.ok(out.includes('function0["a"]'));
-  assert.ok(out.includes('function1["b"]'));
-  assert.ok(out.includes("function0 --> function1"));
-  assert.ok(!out.includes("external"));
+  const g = functions("def a():\n  b()\ndef b():\n  pass\n");
+  assert.equal(node(g, "function0").label, "a");
+  assert.equal(node(g, "function1").label, "b");
+  assert.ok(edges(g).includes("function0 --> function1"));
+  assert.ok(!g.nodes.some((n) => n.id.startsWith("external")));
 });
 
 test("call to unknown function becomes an external node", () => {
-  const out = functions("def a():\n  print(1)\n");
-  assert.ok(out.includes('external1["print"]'));
-  assert.ok(out.includes("function0 --> external1"));
+  const g = functions("def a():\n  print(1)\n");
+  assert.equal(node(g, "external1").label, "print");
+  assert.equal(node(g, "external1").kind, "external");
+  assert.ok(edges(g).includes("function0 --> external1"));
 });
 
 test("method calls are ignored", () => {
-  assert.ok(!functions("def a():\n  obj.m()\n").includes("-->"));
+  assert.equal(functions("def a():\n  obj.m()\n").edges.length, 0);
 });
 
-test("function with repeated calls (whole output)", () => {
+test("parseFunctions adapter keeps the Mermaid output (whole output)", () => {
+  const source = "def a():\n  b()\n  b()\n";
   assert.equal(
-    functions("def a():\n  b()\n  b()\n"),
+    parseFunctions(parser.parse(source), source),
     'flowchart TD\n    function0["a"]\n    external1["b"]\n    function0 --> external1\n'
   );
 });
 
-
 test("repeated calls produce a single edge", () => {
-  assert.equal(edges(functions("def a():\n  b()\n  b()\n")).length, 1);
+  assert.equal(functions("def a():\n  b()\n  b()\n").edges.length, 1);
 });
 
 test("same-named methods in different classes are separate nodes", () => {
-  const out = functions("class A:\n  def __init__(self):\n    x()\nclass B:\n  def __init__(self):\n    y()\n");
-  assert.ok(labels(out).includes("A.__init__"));
-  assert.ok(labels(out).includes("B.__init__"));
-  assert.deepEqual(labelEdges(out).sort(), ["A.__init__ --> x", "B.__init__ --> y"]);
+  const g = functions("class A:\n  def __init__(self):\n    x()\nclass B:\n  def __init__(self):\n    y()\n");
+  assert.ok(labels(g).includes("A.__init__"));
+  assert.ok(labels(g).includes("B.__init__"));
+  assert.deepEqual(labelEdges(g).sort(), ["A.__init__ --> x", "B.__init__ --> y"]);
 });
 
 test("calls inside a nested function are not attributed to the outer function", () => {
-  const out = functions("def outer():\n  def inner():\n    g()\n  f()\n");
-  assert.ok(labels(out).includes("outer"));
-  assert.ok(labels(out).includes("outer.inner"));
-  assert.deepEqual(labelEdges(out).sort(), ["outer --> f", "outer.inner --> g"]);
+  const g = functions("def outer():\n  def inner():\n    g()\n  f()\n");
+  assert.ok(labels(g).includes("outer"));
+  assert.ok(labels(g).includes("outer.inner"));
+  assert.deepEqual(labelEdges(g).sort(), ["outer --> f", "outer.inner --> g"]);
 });
 
 test("bare call to a top-level def links to it", () => {
-  const out = functions("def a():\n  b()\ndef b():\n  pass\n");
-  assert.ok(edges(out)[0].split(" --> ")[1].startsWith("function"));
-  assert.deepEqual(labelEdges(out), ["a --> b"]);
+  const g = functions("def a():\n  b()\ndef b():\n  pass\n");
+  assert.ok(g.edges[0].target.startsWith("function"));
+  assert.deepEqual(labelEdges(g), ["a --> b"]);
 });
 
 test("bare call matching only a nested def goes to an external node", () => {
-  const out = functions("def outer():\n  def inner():\n    pass\n  inner()\n");
-  assert.ok(edges(out).some((e) => e.startsWith("function0 --> external")));
+  const g = functions("def outer():\n  def inner():\n    pass\n  inner()\n");
+  assert.ok(edges(g).some((e) => e.startsWith("function0 --> external")));
 });
 
 test("self.method() calls stay ignored", () => {
-  assert.equal(edges(functions("def a(self):\n  self.save()\n")).length, 0);
+  assert.equal(functions("def a(self):\n  self.save()\n").edges.length, 0);
 });
 
-test("no defs gives exactly the header", () => {
-  assert.equal(functions("x = 1\n"), "flowchart TD\n");
+test("no defs gives no nodes", () => {
+  assert.equal(functions("x = 1\n").nodes.length, 0);
+});
+
+test("defined functions carry their source range", () => {
+  const source = "x = 1\ndef a():\n  pass\n";
+  const a = node(functions(source), "function0");
+  assert.equal(a.kind, "function");
+  assert.equal(a.from, source.indexOf("def"));
+  assert.equal(a.to, source.length); // lezer's Body ends after the trailing newline
+});
+
+test("a decorated def starts at its decorator", () => {
+  const source = "x = 1\n@dec\ndef a():\n  pass\n";
+  assert.equal(node(functions(source), "function0").from, source.indexOf("@"));
+});
+
+test("externals have no source range", () => {
+  const ext = node(functions("def a():\n  print(1)\n"), "external1");
+  assert.equal(ext.from, null);
+  assert.equal(ext.to, null);
 });
 
 test("functions mode uses the shared escaper", () => {
