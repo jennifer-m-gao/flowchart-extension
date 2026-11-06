@@ -13,3 +13,12 @@ export function shouldRender(prev, next) {
     || prev.follow !== next.follow
     || (next.viewKind === "flow" && prev.scopeKey !== next.scopeKey);
 }
+
+// What update() does, given what is shown, what is rendering (or null), and what is wanted.
+// A cursor move only re-highlights; it cancels a render only when that render targets something no longer wanted.
+export function renderAction(shown, rendering, next) {
+  if (!shouldRender(shown, next)) {
+    return rendering ? "cancel-and-highlight" : "highlight";
+  }
+  return rendering && !shouldRender(rendering, next) ? "wait" : "render";
+}
