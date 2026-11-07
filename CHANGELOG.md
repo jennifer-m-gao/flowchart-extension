@@ -4,6 +4,17 @@ All notable changes to the "flowchart-extension" extension will be documented in
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.2.0]
+
+- **▶ Run (Ctrl+Enter):** runs the file with your selected Python interpreter, records each line it executes, then replays the run on the flowchart.
+  - The current box glows, visited boxes are tinted, and loop boxes show how many times they ran.
+  - Play/pause, step, speed and a scrubber; replay follows calls into other functions.
+  - A variables strip (changed values highlighted) and the program's output, both synced to the step.
+  - Limits: 10,000 steps or 10 s; `input()` isn't supported yet. Editing the code ends the replay.
+- Hover hints on boxes, a `?` cheat sheet of all mouse and keyboard controls, and a first-run tip.
+- Functions view: "Hide built-ins" toggle; `self.method()` calls and class constructors are linked.
+- Higher-contrast box borders.
+
 ## [1.1.0]
 
 - Flow view: an interactive control-flow graph of the function under the cursor.

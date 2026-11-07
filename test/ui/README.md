@@ -26,6 +26,21 @@ Output: PASS/FAIL per check on stdout, `test/ui/results.json`, and screenshots i
 | 5 | An edit inside classify while zoomed adds a node and keeps the transform. Moving the offset to `load` refits. |
 | 6 | Functions mode: all 5 user functions are present, the edge count is reported, and `__state.mode` is `"functions"`. |
 | 7 | Dark Modern / Light Modern variable sets, switched by the body class: computed colours, WCAG text contrast of at least 4.5:1, and edge-to-background contrast of at least 3:1 |
+| 8 | Functions view clean-up: built-ins hidden by default; the toggle shows them again |
+| 9 | Hover hints on boxes and controls |
+| 10 | `?` cheat sheet: opens, traps keys (no zoom behind it), Esc closes and returns focus |
+| 11 | First-run tip banner: shown once, dismissible, and the diagram refits when it shows or hides |
+| 12 | Webview state writes are merged (no write drops another field) |
+| R1 | ▶ Run posts `run` and shows "Running…" |
+| R2 | A `trace` message starts replay: run bar shown, first step highlighted |
+| R3 | Play advances at the chosen speed; pause stops it |
+| R4 | Scrubbing into `classify` switches to that function's graph and highlights the right node |
+| R5 | Variables strip shows the step's locals and marks the changed ones |
+| R6 | Output pane holds the program's full stdout at the last step |
+| R7 | Visit-count badge on the `for` loop equals its visit count |
+| R8 | An edit ends replay: run bar hidden, "Code changed" banner, live graph back, no run marks left |
+| R9 | Same-scope step update p95 < 16 ms |
+| R10 | No console errors or CSP violations during run mode |
 | C | No console errors, page errors, failed requests or `securitypolicyviolation` events during the whole run |
 
 ## How the harness stands in for the host

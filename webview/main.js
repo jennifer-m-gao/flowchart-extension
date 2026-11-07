@@ -311,10 +311,10 @@ function startRun() {
 }
 
 const REASONS = {
-  limit: (l) => `Stopped after ${(l.limits?.steps ?? 10000).toLocaleString("en-US")} steps (or ${l.limits?.seconds ?? 10} s)`,
-  "input-not-supported": () => "input() isn't supported yet",
-  exception: (l) => `${l.exception?.type}: ${l.exception?.message}${l.exception?.line != null ? ` (line ${l.exception.line})` : ""}`,
-  exit: (l) => `Program exited (code ${l.exitCode})`,
+  limit: (l) => `Run cut short: PyChart stops after ${(l.limits?.steps ?? 10000).toLocaleString("en-US")} steps or ${l.limits?.seconds ?? 10} s. Replaying the steps up to there.`,
+  "input-not-supported": () => "Run stopped at input(): PyChart can't type into your program yet. Replaying the steps up to there.",
+  exception: (l) => `Your program raised an error${l.exception?.line != null ? ` on line ${l.exception.line}` : ""}: ${l.exception?.type}: ${l.exception?.message}`,
+  exit: (l) => `Your program called exit() with code ${l.exitCode}.`,
 };
 
 function onTrace(trace) {
@@ -458,16 +458,33 @@ function paintStep(f) {
     const badgeText = count >= 2 ? String(count) : "";
     if (badgeText !== n.badgeText) {
       if (!n.badge) {
-        // Created once per node and reused; sits just above the box's top-right corner.
+        // Created once per node and reused: a pill pinned to the box's right edge
+        // (the right corner for a diamond), so it reads as part of the box.
         const box = n.g.querySelector("rect, polygon").getBBox();
-        n.badge = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        const svgNs = "http://www.w3.org/2000/svg";
+        const cx = box.x + box.width;
+        const cy = box.y + box.height / 2;
+        n.badge = document.createElementNS(svgNs, "g");
         n.badge.setAttribute("class", "cfg-badge");
-        n.badge.setAttribute("x", String(box.x + box.width));
-        n.badge.setAttribute("y", String(box.y - 3));
-        n.badge.setAttribute("text-anchor", "end");
+        const pill = document.createElementNS(svgNs, "rect");
+        pill.setAttribute("y", String(cy - 8));
+        pill.setAttribute("height", "16");
+        pill.setAttribute("rx", "8");
+        const label = document.createElementNS(svgNs, "text");
+        label.setAttribute("x", String(cx));
+        label.setAttribute("y", String(cy));
+        label.setAttribute("text-anchor", "middle");
+        label.setAttribute("dominant-baseline", "central");
+        n.badge.append(pill, label);
         n.g.append(n.badge);
       }
-      n.badge.textContent = badgeText;
+      const [pill, label] = n.badge.children;
+      const w = Math.max(16, 7 * badgeText.length + 9);
+      const cx = Number(label.getAttribute("x"));
+      pill.setAttribute("x", String(cx - w / 2));
+      pill.setAttribute("width", String(w));
+      label.textContent = badgeText;
+      n.badge.style.display = badgeText ? "" : "none";
       n.badgeText = badgeText;
     }
     const seen = count ? f.lastSeen.get(id) : null;

@@ -143,9 +143,15 @@ body {
 #tip-banner[hidden], #help-dialog[hidden], #run-banner[hidden], #run-vars[hidden], #run-output[hidden], #run-bar[hidden] { display: none; }
 
 /* Run & replay */
-.cfg-node.is-visited rect, .cfg-node.is-visited polygon { fill: var(--vscode-editor-findMatchHighlightBackground, var(--vscode-editor-inactiveSelectionBackground)); }
-.cfg-node.is-step rect, .cfg-node.is-step polygon { stroke: var(--vscode-debugIcon-continueForeground, var(--vscode-focusBorder)); stroke-width: 3.5; }
-.cfg-node .cfg-badge { fill: var(--vscode-descriptionForeground); font-size: 10px; }
+/* Visited: tinted fill plus a thin run-coloured border, so it shows even where the tint variable is faint. */
+.cfg-node.is-visited > rect, .cfg-node.is-visited > polygon {
+  fill: var(--vscode-editor-findMatchHighlightBackground, var(--vscode-editor-inactiveSelectionBackground));
+  stroke: var(--vscode-debugIcon-continueForeground, var(--vscode-focusBorder));
+  stroke-width: 1.5;
+}
+.cfg-node.is-step > rect, .cfg-node.is-step > polygon { stroke: var(--vscode-debugIcon-continueForeground, var(--vscode-focusBorder)); stroke-width: 3.5; }
+.cfg-node .cfg-badge rect { fill: var(--vscode-badge-background, var(--vscode-focusBorder)); stroke: none; }
+.cfg-node .cfg-badge text { fill: var(--vscode-badge-foreground, #fff); font-size: 10px; font-weight: 600; }
 
 #run-banner {
   flex-shrink: 0;
